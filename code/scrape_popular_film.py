@@ -8,7 +8,7 @@ from selenium.webdriver.support import expected_conditions as EC
 
 from time import sleep
 
-MAX_ITER = 100
+MAX_ITER = 200 # 10_000 films
 
 driver = Chrome()
 driver.get(
