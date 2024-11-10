@@ -12,7 +12,7 @@ MAX_ITER = 200 # 10_000 films
 
 driver = Chrome()
 driver.get(
-    'https://www.imdb.com/search/title/?title_type=feature,tv_series&sort=num_votes,desc'
+    'https://www.imdb.com/search/title/?title_type=feature&sort=num_votes,desc'
 )
 expand_button = WebDriverWait(driver, 10).until(
     EC.element_to_be_clickable(
