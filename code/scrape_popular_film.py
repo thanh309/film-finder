@@ -8,7 +8,7 @@ from selenium.webdriver.support import expected_conditions as EC
 
 from time import sleep
 
-MAX_ITER = 200 # 10_000 films
+MAX_ITER = 20  # 1_000 films
 
 driver = Chrome()
 driver.get(
@@ -27,12 +27,12 @@ for i in range(MAX_ITER - 1):
 page_source = driver.page_source
 soup = BeautifulSoup(page_source, 'html.parser')
 
-all_links = list(set(
+all_links = list(
     re.search(r'/title/tt(\d+)', a['href']).group(1)
     for a in soup.find_all('a', href=True) if a['href'].startswith('/title')
-))
+)[::2]
 
-with open('resources/title_id.txt', 'w') as f:
+with open('resources/title_ids.txt', 'w') as f:
     for link in all_links:
         f.write(f"{link}\n")
 
