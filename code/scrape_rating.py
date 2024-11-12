@@ -4,13 +4,11 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver import Chrome, ChromeOptions
 from bs4 import BeautifulSoup
 import re
-import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from time import sleep
 
-UID = ('16619373', '0307374', '120934913')  # 290, 631, private
 ADBLOCK_PATH = 'resources/adblock.crx'
 
-def scrape_user_ratings(uid: str, driver: Chrome):
+def scrape_user_ratings(uid: str, driver: Chrome) -> None | str | list[str]:
     url = f'https://www.imdb.com/user/ur{uid}/ratings/?view=compact&title_type=feature&sort=num_votes%2Cdesc'
     driver.get(url)
 
@@ -22,6 +20,8 @@ def scrape_user_ratings(uid: str, driver: Chrome):
     soup = BeautifulSoup(html_content, 'html.parser')
 
     title_tag = soup.find('title')
+    if title_tag and "Error 503" in title_tag.text:
+        return "503_error"
     if title_tag and 'Private list' in title_tag.text:
         return
 
@@ -41,7 +41,7 @@ def scrape_user_ratings(uid: str, driver: Chrome):
     while True:
         driver.execute_script(
             "window.scrollTo(0, document.body.scrollHeight);")
-        time.sleep(scroll_pause_time)
+        sleep(scroll_pause_time)
 
         new_height = driver.execute_script("return document.body.scrollHeight")
         if new_height == last_height:
@@ -66,7 +66,7 @@ def scrape_user_ratings(uid: str, driver: Chrome):
                 rating_tag = item.find('span', {'aria-label': re.compile(r'User rating: \d+')})
                 if rating_tag:
                     rating = re.search(r'User rating: (\d+)', rating_tag['aria-label']).group(1)
-                    ratings_data.append(f'{fid},{rating}')
+                    ratings_data.append(f'{uid},{fid},{rating}')
 
     return ratings_data
 
@@ -79,6 +79,29 @@ def create_driver() -> Chrome:
     return driver
 
 
-driver = create_driver()
+def main(user_ids):
+    driver = create_driver()
+    
+    try:
+        with open('resources/users_ratings_small.csv', 'w') as fw:
+            for uid in user_ids:
+                while True:
+                    data = scrape_user_ratings(uid, driver)
+                    if data == '503_error':
+                        print(f"Received 503 error for {uid}. Waiting 30 seconds before retrying...")
+                        sleep(30)
+                    elif data:
+                        for line in data:
+                            fw.write(line)
+                            fw.write('\n')
+                    else:
+                        break
 
-print(scrape_user_ratings(UID[0], driver))
+    finally:
+        driver.quit()
+
+
+if __name__ == '__main__':
+    with open('resources/user_ids_50.txt', 'r') as f:
+        uids = [line.strip() for line in f]
+    main(uids)
