@@ -9,11 +9,12 @@ from time import sleep
 
 MAX_WORKERS = 5
 WAIT_TIME = 45
-
+ADBLOCK_PATH = 'resources/adblock.crx'
 def create_driver() -> Chrome:
     options = ChromeOptions()
-    options.add_argument('--disable-dev-shm-usage')
+    # options.add_argument('--disable-dev-shm-usage')
     options.add_argument('--blink-settings=imagesEnabled=false')
+    options.add_argument('--load-extension ' + ADBLOCK_PATH)
     driver = Chrome(options=options)
     return driver
 
