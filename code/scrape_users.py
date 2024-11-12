@@ -7,12 +7,13 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from time import sleep
 
-MAX_WORKERS = 10
-WAIT_TIME = 90
+MAX_WORKERS = 5
+WAIT_TIME = 45
 
 def create_driver() -> Chrome:
     options = ChromeOptions()
-    options.add_argument('--disable-dev-shm-usage')  
+    options.add_argument('--disable-dev-shm-usage')
+    options.add_argument('--blink-settings=imagesEnabled=false')
     driver = Chrome(options=options)
     return driver
 
@@ -45,7 +46,7 @@ def scrape_ids_from_url(url: str, driver: Chrome) -> set[str]:
 
 
 
-with open("resources/title_ids.txt", "r") as f:
+with open("resources/title_ids_500.txt", "r") as f:
     urls = [f"https://www.imdb.com/title/tt{line.strip()}/reviews/?sort=review_volume%2Cdesc" for line in f]
 
 
@@ -63,7 +64,7 @@ try:
             ids = future.result()
             all_ids.update(ids)
 
-    with open("resources/unique_ids.txt", "w") as f:
+    with open("resources/user_ids_500.txt", "w") as f:
         for user_id in all_ids:
             f.write(f"{user_id}\n")
 
