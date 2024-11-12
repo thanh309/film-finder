@@ -8,6 +8,11 @@ from time import sleep
 
 ADBLOCK_PATH = 'resources/adblock.crx'
 
+
+PART = 1
+
+
+
 def scrape_user_ratings(uid: str, driver: Chrome) -> None | str | list[str]:
     url = f'https://www.imdb.com/user/ur{uid}/ratings/?view=compact&title_type=feature&sort=num_votes%2Cdesc'
     driver.get(url)
@@ -83,7 +88,7 @@ def main(user_ids):
     driver = create_driver()
     
     try:
-        with open('resources/users_ratings_small.csv', 'w') as fw:
+        with open(f'resources/ratings/users_ratings_part{PART}.csv', 'w') as fw:
             for uid in user_ids:
                 while True:
                     data = scrape_user_ratings(uid, driver)
@@ -94,6 +99,7 @@ def main(user_ids):
                         for line in data:
                             fw.write(line)
                             fw.write('\n')
+                        break
                     else:
                         break
 
@@ -102,6 +108,6 @@ def main(user_ids):
 
 
 if __name__ == '__main__':
-    with open('resources/user_ids_50.txt', 'r') as f:
+    with open(f'resources/uids/user_ids_part{PART}.txt', 'r') as f:
         uids = [line.strip() for line in f]
     main(uids)
