@@ -9,7 +9,7 @@ from time import sleep
 ADBLOCK_PATH = 'resources/adblock.crx'
 
 
-PART = 1
+PART = 2
 
 
 
