@@ -4,12 +4,12 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver import Chrome, ChromeOptions
 from bs4 import BeautifulSoup
 import re
-from time import sleep
+from time import sleep, time
 
 ADBLOCK_PATH = 'resources/adblock.crx'
 
 
-PART = 2
+PART = 402
 
 
 
@@ -40,7 +40,7 @@ def scrape_user_ratings(uid: str, driver: Chrome) -> None | str | list[str]:
     if rating_count <= 20:
         return
 
-    scroll_pause_time = 2
+    scroll_pause_time = 3
     last_height = driver.execute_script("return document.body.scrollHeight")
 
     while True:
@@ -93,14 +93,16 @@ def main(user_ids):
                 while True:
                     data = scrape_user_ratings(uid, driver)
                     if data == '503_error':
-                        print(f"Received 503 error for {uid}. Waiting 30 seconds before retrying...")
+                        print(f"Received 503 error for {uid}. Waiting 30 seconds before retrying... time={time()}")
                         sleep(30)
                     elif data:
                         for line in data:
                             fw.write(line)
                             fw.write('\n')
+                        sleep(5)
                         break
                     else:
+                        sleep(5)
                         break
 
     finally:
