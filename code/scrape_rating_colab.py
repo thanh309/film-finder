@@ -34,8 +34,7 @@ PART = 5
 
 
 def scrape_user_ratings(uid: str, driver: Chrome) -> None | str | list[str]:
-    url = f'https://www.imdb.com/user/ur{
-        uid}/ratings/?view=compact&title_type=feature&sort=num_votes%2Cdesc'
+    url = f'https://www.imdb.com/user/ur{uid}/ratings/?view=compact&title_type=feature&sort=num_votes%2Cdesc'
     driver.get(url)
 
     WebDriverWait(driver, 10).until(
@@ -128,8 +127,7 @@ def main(user_ids):
                 while True:
                     data = scrape_user_ratings(uid, driver)
                     if data == '503_error':
-                        print(f"Received 503 error for {
-                              uid}. Waiting 30 seconds before retrying... time={time()}")
+                        print(f"Received 503 error for {uid}. Waiting 30 seconds before retrying... time={time()}")
                         sleep(30)
                     elif data:
                         for line in data:
