@@ -9,7 +9,7 @@ from time import sleep, time
 ADBLOCK_PATH = 'resources/adblock.crx'
 
 
-PART = 1
+PART = 7
 
 
 
@@ -37,7 +37,8 @@ def scrape_user_ratings(uid: str, driver: Chrome) -> None | str | list[str]:
 
     rating_count = int(re.search(r'(\d+) titles', count_tag.text).group(1))
 
-    # if rating_count <= 20:
+    # if rating_count > 20:
+    #     print('too many')
     #     return
 
     scroll_pause_time = 3
@@ -76,12 +77,13 @@ def scrape_user_ratings(uid: str, driver: Chrome) -> None | str | list[str]:
                 if rating_tag:
                     rating = re.search(r'User rating: (\d+)', rating_tag['aria-label']).group(1)
                     ratings_data.append(f'{uid},{fid},{rating}')
-
+    print(f'Done uid {uid}')
     return ratings_data
 
 def create_driver() -> Chrome:
     options = ChromeOptions()
-    # options.add_argument('--disable-dev-shm-usage')
+    options.add_argument('--disable-dev-shm-usage')
+    options.add_argument('--no-sandbox')
     options.add_argument('--blink-settings=imagesEnabled=false')
     options.add_argument('--load-extension ' + ADBLOCK_PATH)
     driver = Chrome(options=options)
