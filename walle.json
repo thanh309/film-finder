@@ -1,0 +1,112 @@
+{
+    "@context": "https://schema.org",
+    "@type": "Movie",
+    "url": "https://www.imdb.com/title/tt0910970/",
+    "name": "WALL·E",
+    "image": "https://m.media-amazon.com/images/M/MV5BMjExMTg5OTU0NF5BMl5BanBnXkFtZTcwMjMxMzMzMw@@._V1_.jpg",
+    "description": "A robot who is responsible for cleaning a waste-covered Earth meets another robot and falls in love with her. Together, they set out on a journey that will alter the fate of mankind.",
+    "review": {
+      "@type": "Review",
+      "itemReviewed": {
+        "@type": "Movie",
+        "url": "https://www.imdb.com/title/tt0910970/"
+      },
+      "author": {
+        "@type": "Person",
+        "name": "DrWetter"
+      },
+      "dateCreated": "2008-06-08",
+      "inLanguage": "English",
+      "name": "Pixar does it again!",
+      "reviewBody": "I just returned from an advanced benefit screening of WALL*E, and I want to be careful not to spill too much regarding the movie. I had the added privilege of watching the film at Pixar, which in and of itself, was amazing.\n\nThis picture is not a cartoon; it is a film. In fact, it even has the LOOK of film. One of my complaints of more recent 3-D/CG animated films (not from Pixar) is that they all seem to look the same... clean lines, crisp colors, and very &quot;virtual&quot;, for lack of a better term. WALL*E transcends the typical look of CG animation, and has a true to life &quot;grit.&quot; The creators at Pixar are true artists, and are indeed masters of their craft. Not only are they masters of the technology, they are masters of telling a story. WALL*E is no exception.\n\nThe best way to describe the film is as a science fiction, comedy, dramatic love story. WALL*E, as a character, has dimension, personality, and heart... pretty impressive given that he is essentially a trash compactor. It is true that there is little dialogue in this feature, but I personally did not feel it detracted from the story at all.\n\nWALL*E is very much a different Pixar film from it&apos;s previous features. I will be curious to see how it is received by others, but in my opinion, I think Pixar has stayed true to itself, demonstrating a commitment to telling great stories and pushing the edge of technology to leave your jaw dropping! My most sincere compliments to Andrew Stanton, Jim Morris, John Lasseter, Ben Burtt, and all the creative forces at Pixar. Can&apos;t wait to see what the future brings...",
+      "reviewRating": {
+        "@type": "Rating",
+        "worstRating": 1,
+        "bestRating": 10,
+        "ratingValue": 10
+      }
+    },
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingCount": 1227632,
+      "bestRating": 10,
+      "worstRating": 1,
+      "ratingValue": 8.4
+    },
+    "contentRating": "G",
+    "genre": [
+      "Animation",
+      "Adventure",
+      "Family"
+    ],
+    "datePublished": "2008-06-27",
+    "keywords": "robot,obesity,pollution,outer space,earth",
+    "trailer": {
+      "@type": "VideoObject",
+      "name": "Wall E",
+      "embedUrl": "https://www.imdb.com/video/imdb/vi2192703769",
+      "thumbnail": {
+        "@type": "ImageObject",
+        "contentUrl": "https://m.media-amazon.com/images/M/MV5BMTc2Njc2MTYyN15BMl5BanBnXkFtZTgwMzcwNTczMzE@._V1_.jpg"
+      },
+      "thumbnailUrl": "https://m.media-amazon.com/images/M/MV5BMTc2Njc2MTYyN15BMl5BanBnXkFtZTgwMzcwNTczMzE@._V1_.jpg",
+      "url": "https://www.imdb.com/video/vi2192703769/",
+      "description": "Wall E - Trailer #3",
+      "duration": "PT2M32S",
+      "uploadDate": "2008-03-15T11:26:18Z"
+    },
+    "actor": [
+      {
+        "@type": "Person",
+        "url": "https://www.imdb.com/name/nm0123785/",
+        "name": "Ben Burtt"
+      },
+      {
+        "@type": "Person",
+        "url": "https://www.imdb.com/name/nm2264184/",
+        "name": "Elissa Knight"
+      },
+      {
+        "@type": "Person",
+        "url": "https://www.imdb.com/name/nm0307531/",
+        "name": "Jeff Garlin"
+      }
+    ],
+    "director": [
+      {
+        "@type": "Person",
+        "url": "https://www.imdb.com/name/nm0004056/",
+        "name": "Andrew Stanton"
+      }
+    ],
+    "creator": [
+      {
+        "@type": "Organization",
+        "url": "https://www.imdb.com/company/co0622634/"
+      },
+      {
+        "@type": "Organization",
+        "url": "https://www.imdb.com/company/co0017902/"
+      },
+      {
+        "@type": "Organization",
+        "url": "https://www.imdb.com/company/co0008970/"
+      },
+      {
+        "@type": "Person",
+        "url": "https://www.imdb.com/name/nm0004056/",
+        "name": "Andrew Stanton"
+      },
+      {
+        "@type": "Person",
+        "url": "https://www.imdb.com/name/nm0230032/",
+        "name": "Pete Docter"
+      },
+      {
+        "@type": "Person",
+        "url": "https://www.imdb.com/name/nm0714114/",
+        "name": "Jim Reardon"
+      }
+    ],
+    "duration": "PT1H38M"
+  }
