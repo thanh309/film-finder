@@ -39,7 +39,7 @@
             <section class = "highest-rated">
                 <h2>Highest Rated Films</h2>
                 <div class = "film-list">
-                    {% for movie in highest-rated_movie}
+                    {% for movie in highest_rated_movie %}
                         <div class = "film-item">
                             <a href = "{{ url_for('content', content_id = movie['fid']) }}">
                                 <img src = "{{ movie.poster }}">
