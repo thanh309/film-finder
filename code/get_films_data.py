@@ -28,6 +28,12 @@ with open(f'{DATA_DIR}/split_fids/fids_part_{PART}.txt', 'r') as fr:
 
 os.makedirs(output_dir, exist_ok=True)
 
+def rfc4180_format(field):
+    if isinstance(field, str):
+        # Escape double quotes and wrap the field in quotes if necessary
+        if any(c in field for c in [',', '"', '\n', '\r']):
+            field = f'"{field.replace("\"", "\"\"")}"'
+    return str(field)
 
 def get_film_data(film_id: str):
     """Fetches film data from IMDb."""
@@ -85,7 +91,24 @@ def process_film(fid: str):
             ','.join([director['name'] for director in json_film.get('director', [])]))
         image = json_film.get('image', '')
 
-        return f'{fid},"{name}","{description}",{rating_count},{rating_value},{content_rating},"{genre}","{keywords}",{duration},{date_published},"{actors}","{directors}","{image}"\n'
+        fields = [
+            fid,
+            name,
+            description,
+            rating_count,
+            rating_value,
+            content_rating,
+            genre,
+            keywords,
+            duration,
+            date_published,
+            actors,
+            directors,
+            image,
+        ]
+
+        return ','.join(rfc4180_format(field) for field in fields) + '\n'
+    
     except Exception as e:
         print(f"Error processing data for ID {fid}: {e}")
         return None
@@ -93,7 +116,7 @@ def process_film(fid: str):
 
 def main(fids):
     """Writes film data to a CSV file sequentially with a delay between requests."""
-    with open(f'{output_dir}/film_data_part{PART}.csv', 'w') as fw:
+    with open(f'{output_dir}/film_data_part{PART}.csv', 'w', encoding='utf-8') as fw:
         # Write the header
         fw.write('fid,name,description,ratingCount,ratingValue,contentRating,genre,keywords,duration,datePublished,actor,director,image\n')
 
