@@ -10,7 +10,7 @@
 </head>
 
 <body>
-    <img src = "images/logo.jpg" alt = "Logo" class = "logo">
+    <img src = "../static/images/logo.png" alt = "Logo" class = "logo">
     <div class = "login-box">
         <h1>Login</h1>
         {% if error %}
@@ -21,8 +21,9 @@
             <button type = "submit">Login</button>
         </form>
 
-        <form method = 'POST' action = "{{  url_for('guest') }}">
-            <button type = "submit" class="guest-button">Use as Guest</button>
+        <form method = "POST">
+            <input type="hidden" name="username" value="guest">
+            <button type="submit" class="guest-button">Continue as Guest</button>
         </form>
     </div>
     
