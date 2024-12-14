@@ -1,0 +1,123 @@
+<!-- main.html -->
+ <!DOCTYPE html>
+ <html lang = 'en'>
+<head>
+    <meta charset = "UTF-8">
+    <meta name = "viewport" content = "width = device-width, initial-scale = 1.0">
+    <title>Main Page</title>
+    <link rel = "stylesheet" href = "../static/css/main.css">
+</head>
+<body>
+    {% if session['user'] != 'Guest' %}
+        <div class = "header">
+            <img src = "../static/images/logo.jpg" alt = "Logo" class = "logo">
+            <form method = "POST" class = "search-bar">
+                <input type = "text" id = "search" name = "search" placeholder="Search for a movie">
+                <button type = "submit">Search</button>
+            </form>
+            <div class = "user-info">
+                <span>Welcome, {{ session['user'] }}</span>
+                <a href = "{{ url_for('logout')}}">Logout</a>
+            </div>
+        </div>
+
+        <div class = "content">
+            <section class = "you-may-like">
+                <h2>You May Like</h2>
+                <div class = "film-list">
+                    {% for movie in may_like_movies %}
+                        <div class = "film-item">
+                            <a href = "{{ url_for('content', content_id = movie['fid']) }}">
+                                <img src = "{{ movie.poster }}">
+                                <p>{{ movie.name }}</p>
+                            </a>
+                        </div>
+                    {% endfor %}
+                </div>
+            </section>
+
+            <section class = "highest-rated">
+                <h2>Highest Rated Films</h2>
+                <div class = "film-list">
+                    {% for movie in highest-rated_movie}
+                        <div class = "film-item">
+                            <a href = "{{ url_for('content', content_id = movie['fid']) }}">
+                                <img src = "{{ movie.poster }}">
+                                <p>{{ movie.name }}</p>
+                            </a>
+                        </div>
+                    {% endfor %}
+                </div>
+            </section>
+
+            <section class = "additional-links">
+                <h2>Github</h2>
+                <ul>
+                    <li><a href = "https://github.com"></a></li>
+                </ul>
+            </section>
+        </div>
+
+    {% else %}
+        <div class="header">
+            <img src="logo.png" alt="Logo" class="logo">
+            <form method="POST" class="search-bar">
+                <input type="text" id="search" name="search" placeholder="Search for a movie">
+                <button type="submit">Search</button>
+            </form>
+            <div class="user-info">
+                <span>Welcome, Guest</span>
+                <a href="{{ url_for('logout') }}">Logout</a>
+            </div>
+        </div>
+
+        <div class="content">
+            <section class="highest-rated">
+                <h2>Highest Rated Films</h2>
+                <div class="film-list">
+                    {% for movie in highest_rated_movies %}
+                        <div class="film-item">
+                            <a href="{{ url_for('content', content_id=movie['fid']) }}">
+                                <img src="{{ movie.poster }}" alt="{{ movie.name }}">
+                                <p>{{ movie.name }}</p>
+                            </a>
+                        </div>
+                    {% endfor %}
+                </div>
+            </section>
+
+            <section class="additional-links">
+                <h2>Github</h2>
+                <ul>
+                    <li><a href="https://github.com">GitHub</a></li>
+                </ul>
+            </section>
+        </div>
+    {% endif %}
+</body>
+</html>
+
+
+
+
+    <!-- <h1>Welcome, {{ session['user'] }}</h1>
+    <a href = "{{url_for('logout')}}">Logout</a>
+    <form method = "POST">
+        <label for = "search"> Search For a Movie: </label>
+        <input type = "text" id = "search" name = "search" placeholder="Enter movie name">
+        <button type = "submit">Search</button>
+    </form>
+
+    <h2>Movies:</h2>
+    <ul>
+        {% for movie in content %}
+            <li>
+                <a href = "{{ url_for('content', content_id = movie['fid'] )}}">
+                    {{ movie['name'] }}
+                </a>
+            </li>
+        {% endfor %}
+    </ul>
+
+</body>
+ </html> -->
