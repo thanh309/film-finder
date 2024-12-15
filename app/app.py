@@ -61,9 +61,11 @@ def login():
 def main():
     is_guest = session.get('user') == 'guest'
     user_name = session.get('user','guest')
+    display_index_you_may_like = int(request.args.get('display_index_you_may_like', 0))
+    display_index_highest_rated = int(request.args.get('display_index_highest_rated', 0))
 
-    highest_rated_movies = db_movie.sort_values(by='ratingValue', ascending=False).head(10).to_dict('records')
-    you_may_like_movies = [] if is_guest else db_movie.sample(10).to_dict('records')
+    highest_rated_movies = db_movie.sort_values(by='ratingValue', ascending=False).to_dict('records')
+    you_may_like_movies = [] if is_guest else db_movie.sample(10).sort_values(by='ratingValue', ascending = False).to_dict('records')
 
     search_query = request.form.get('search', '').lower() if request.method == 'POST' else ''
     filtered_movies = db_movie[db_movie['name'].str.contains(search_query, case=False, na=False)].to_dict('records') if search_query else []
@@ -74,7 +76,9 @@ def main():
         is_guest=is_guest,
         highest_rated_movies=highest_rated_movies,
         you_may_like_movies=you_may_like_movies,
-        search_results=filtered_movies
+        search_results=filtered_movies,
+        display_index_you_may_like=display_index_you_may_like,
+        display_index_highest_rated=display_index_highest_rated
     )
 
 @app.route('/content/<int:content_id>', methods=['GET', 'POST'])

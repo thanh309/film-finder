@@ -1,5 +1,4 @@
 /* main.css */
-/* Global styles */
 body, html {
     margin: 0;
     padding: 0;
@@ -7,7 +6,6 @@ body, html {
     background: #f4f4f4;
 }
 
-/* Header styling */
 .header {
     display: flex;
     justify-content: space-between;
@@ -18,13 +16,14 @@ body, html {
 }
 
 .logo {
-    width: 100px;
-    height: auto;
+    width: 50px;
+    height: 50px;
 }
 
 .search-bar input {
     padding: 10px;
     font-size: 16px;
+    width: 400px;
     border-radius: 5px;
     border: none;
 }
@@ -45,22 +44,23 @@ body, html {
 
 .user-info {
     display: flex;
-    flex-direction: column;
-    align-items: flex-end;
+    flex-direction: row;
+    align-items: center;
+    gap: 40px;
 }
 
 .user-info a {
     color: white;
     text-decoration: none;
-    margin-top: 10px;
+    align-items: center;
+
 }
 
-/* Content styling */
+/* Main Content */
 .content {
     padding: 20px;
 }
 
-/* Section styling */
 section {
     margin-bottom: 40px;
 }
@@ -70,44 +70,73 @@ section h2 {
     margin-bottom: 10px;
 }
 
-/* Film list and items */
+/* Film List Container */
+.film-slider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
 .film-list {
     display: flex;
-    overflow-x: auto;
-    gap: 15px;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 5px;
 }
 
-.film-item {
-    width: 150px;
+.movie-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     text-align: center;
-}
-
-.film-item img {
-    width: 100%;
-    height: auto;
+    width: 200px; 
+    height: 180px; 
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
     border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.film-item p {
-    margin-top: 10px;
-    font-size: 14px;
+.movie-card img {
+    width: 100%; 
+    height: 80%; 
+    object-fit: cover;
 }
 
-/* Additional links */
-.additional-links ul {
-    list-style: none;
-    padding: 0;
+.movie-card h3 {
+    margin: 10px 0;
+    font-size: 1.1rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-.additional-links ul li {
-    margin: 5px 0;
+.prev-button,
+.next-button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 10px;
+    font-size: 18px;
+    cursor: pointer;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 1;
+    border-radius: 50%;
 }
 
-.additional-links ul li a {
-    color: #007BFF;
-    text-decoration: none;
+.prev-button {
+    left: 0;
 }
 
-.additional-links ul li a:hover {
-    text-decoration: underline;
+.next-button {
+    right: 0;
+}
+
+.prev-button:hover,
+.next-button:hover {
+    background-color: #0056b3;
 }

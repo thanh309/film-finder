@@ -14,7 +14,7 @@ header {
     justify-content: space-between;
 }
 
-header back-button {
+header a.back-button {
     color: white;
     text-decoration: none;
     font-size: 20px;
@@ -36,7 +36,7 @@ header input[type="text"] {
 }
 
 header button {
-    background-color: #ffffff;
+    background-color: #5a5959;
     color: white;
     border: none;
     padding: 5px 10px;
@@ -61,12 +61,6 @@ main {
 .poster-container {
     flex: 1;
     text-align: center;
-}
-
-.poster {
-    max-width: 100%;
-    border-radius: 5px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
 }
 
 .details-container {
@@ -100,4 +94,12 @@ main {
 
 .star.active {
     color: gold;
+}
+
+.poster {
+    width: 300px;
+    height: 450px; 
+    object-fit: cover;
+    border-radius: 5px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
 }

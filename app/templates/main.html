@@ -1,3 +1,4 @@
+<!--main.html-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -25,10 +26,12 @@
                 <h2>Search Results</h2>
                 <div class="film-list">
                     {% for movie in search_results %}
-                        <div class="film-item">
+                        <div class="movie-card">
                             <a href="{{ url_for('content', content_id=movie['fid']) }}">
-                                <img src="{{ movie.image }}" alt="{{ movie.name }}">
-                                <p>{{ movie.name }}</p>
+                                <div class="movie-card">
+                                    <img src="{{ movie.image }}" alt="{{ movie.name }}" class="main-movie-image">
+                                    <h3>{{ movie.name }}</h3>
+                                </div>
                             </a>
                         </div>
                     {% endfor %}
@@ -39,30 +42,42 @@
         {% if not is_guest %}
             <section class="you-may-like">
                 <h2>You May Like</h2>
-                <div class="film-list">
-                    {% for movie in you_may_like_movies %}
-                        <div class="film-item">
-                            <a href="{{ url_for('content', content_id=movie['fid']) }}">
-                                <img src="{{ movie.image }}" alt="{{ movie.name }}">
-                                <p>{{ movie.name }}</p>
-                            </a>
-                        </div>
-                    {% endfor %}
+                <div class = "film-slider">
+                    <button class="prev-you-may-like">&#8249;</button>
+                    <div class="film-list">
+                        {% for movie in you_may_like_movies[display_index_you_may_like:display_index_you_may_like+5] %}
+                            <div class="movie-card">
+                                <a href="{{ url_for('content', content_id=movie['fid']) }}">
+                                    <div class="movie-card">
+                                        <img src="{{ movie.image }}" alt="{{ movie.name }}" class="main-movie-image">
+                                        <h3>{{ movie.name }}</h3>
+                                    </div>
+                                </a>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <button class="next-you-may-like">&#8250</button>
                 </div>
             </section>
         {% endif %}
 
         <section class="highest-rated">
             <h2>Highest Rated Films</h2>
-            <div class="film-list">
-                {% for movie in highest_rated_movies %}
-                    <div class="film-item">
-                        <a href="{{ url_for('content', content_id=movie['fid']) }}">
-                            <img src="{{ movie.image }}" alt="{{ movie.name }}">
-                            <p>{{ movie.name }}</p>
-                        </a>
-                    </div>
-                {% endfor %}
+            <div class = "film-slider">
+                <button class="prev-highest-rated">&#8249;</button>
+                <div class="film-list">
+                    {% for movie in highest_rated_movies[display_index_highest_rated:display_index_highest_rated+5] %}
+                        <div class="movie-card">
+                            <a href="{{ url_for('content', content_id=movie['fid']) }}">
+                                <div class="movie-card">
+                                    <img src="{{ movie.image }}" alt="{{ movie.name }}" class="main-movie-image">
+                                    <h3>{{ movie.name }}</h3>
+                                </div>
+                            </a>
+                        </div>
+                    {% endfor %}
+                </div>
+                <button class="next-highest-rated">&#8250</button>
             </div>
         </section>
 
@@ -73,5 +88,43 @@
             </ul>
         </section>
     </main>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const isGuest = "{{ is_guest }}".toLowerCase() === 'true';
+            if (!isGuest){
+                const prevButtonYouMayLike = document.querySelector('.prev-you-may-like');
+                const nextButtonYouMayLike = document.querySelector('.next-you-may-like');
+                let offsetYouMayLike = "{{ display_index_you_may_like }}";
+                
+                prevButtonYouMayLike.addEventListener('click', function() {
+                    if (offsetYouMayLike > 0) {
+                        offsetYouMayLike--;
+                        window.location.search = '?display_index_you_may_like=' + offsetYouMayLike + '&display_index_highest_rated={{ display_index_highest_rated }}';
+                    }
+                });
+
+                nextButtonYouMayLike.addEventListener('click', function() {
+                    offsetYouMayLike++;
+                    window.location.search = '?display_index_you_may_like=' + offsetYouMayLike + '&display_index_highest_rated={{ display_index_highest_rated }}';
+                });
+            }
+            const prevButtonHighestRated = document.querySelector('.prev-highest-rated');
+            const nextButtonHighestRated = document.querySelector('.next-highest-rated');
+            let offsetHighestRated = "{{ display_index_highest_rated }}";
+            
+            prevButtonHighestRated.addEventListener('click', function() {
+                if (offsetHighestRated > 0) {
+                    offsetHighestRated--;
+                    window.location.search = '?display_index_you_may_like={{ display_index_you_may_like }}&display_index_highest_rated=' + offsetHighestRated;
+                }
+            });
+
+            nextButtonHighestRated.addEventListener('click', function() {
+                offsetHighestRated++;
+                window.location.search = '?display_index_you_may_like={{ display_index_you_may_like }}&display_index_highest_rated=' + offsetHighestRated;
+            });
+        });
+    </script>
 </body>
 </html>
