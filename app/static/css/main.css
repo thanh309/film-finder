@@ -3,7 +3,10 @@ body, html {
     margin: 0;
     padding: 0;
     font-family: Arial, sans-serif;
-    background: #f4f4f4;
+    /* background: #f4f4f4; */
+    /* ******************************************** */
+    background: #242526;
+    color: white;
 }
 
 .header {
@@ -11,19 +14,27 @@ body, html {
     justify-content: space-between;
     align-items: center;
     padding: 20px;
-    background-color: #333;
+    /* background-color: #333; */
+     /* ******************************************** */
+    background-color: #353838;
     color: white;
 }
 
 .logo {
-    width: 50px;
-    height: 50px;
+    /* ******************************************** */
+    /* width: 50px;
+    height: 50px; */
+    width: 80px;
+    height: 80px;
 }
 
 .search-bar input {
-    padding: 10px;
+    /* padding: 10px; */
+    /* ******************************************** */
+    padding: 14px;
+    width: 600px;
     font-size: 16px;
-    width: 400px;
+    /* width: 400px; */
     border-radius: 5px;
     border: none;
 }
@@ -47,6 +58,8 @@ body, html {
     flex-direction: row;
     align-items: center;
     gap: 40px;
+    /* ************************************** */
+    font-size: 20px;
 }
 
 .user-info a {
@@ -85,8 +98,8 @@ section h2 {
     gap: 5px;
 }
 
-.movie-card {
-    display: flex;
+/* .movie-card { */
+    /* display: flex;
     flex-direction: column;
     align-items: center;
     text-align: center;
@@ -103,7 +116,44 @@ section h2 {
     width: 100%; 
     height: 80%; 
     object-fit: cover;
+} */
+
+    /* ************************************** */
+.movie-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;  
+    text-align: center;
+    width: 220px; 
+    height: 400px; 
+    background-color: #242526;
+    /* border: 1px solid #ddd; */
+        /* ************************************** */
+    /* border: 1px solid #242526;
+    border-radius: 8px; */
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    padding: 10px; 
+    color: white; 
 }
+.movie-card:hover {
+    transform: scale(1.15);  /* Phóng to card lên 20% */
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);  /* Tăng độ đổ bóng */
+    z-index: 1;  /* Đảm bảo card hiện lên trên các card khác */
+}
+
+.movie-card:hover ~ .movie-card {
+    opacity: 0.5;  /* Các card khác sẽ mờ đi khi hover vào card này */
+}
+.movie-card img {
+    width: 100%;  /* Đảm bảo ảnh chiếm đầy đủ chiều rộng */
+    height: 100%;  /* Đảm bảo ảnh có chiều cao đầy đủ */
+    /* object-fit: contain;  Đảm bảo ảnh luôn hiển thị đầy đủ, không bị cắt */
+    object-fit: cover;
+    object-position: center;  /* Căn giữa ảnh trong container nếu có khoảng trống */
+}
+
 
 .movie-card h3 {
     margin: 10px 0;
@@ -118,14 +168,19 @@ section h2 {
     background-color: #007bff;
     color: white;
     border: none;
-    padding: 10px;
-    font-size: 18px;
+    /* padding: 10px; */
+    /* ************************************** */
+    padding: 30px;
+    font-size: 16px;
     cursor: pointer;
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
     z-index: 1;
     border-radius: 50%;
+    /* ************************************** */
+    width: 20px;
+    height: 50px;
 }
 
 .prev-button {
