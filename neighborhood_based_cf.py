@@ -22,31 +22,29 @@ class NeighborhoodCF:
         self.utility_matrix = utility_matrix
         self.normalized_utility_matrix = normalize(self.utility_matrix)
         self.mean_ratings = find_nonzero_mean_ratings(self.utility_matrix)
-        self.cosine_similarity_matrix = self.cosine_similarity()
-        self.pearson_similarity_matrix = self.pearson_correlation()
         self.k_neighbors = k_neighbors
         self.uu_cf = uu_cf      # if uu_cf = True, we are building the user-user CF; otherwise item-item CF
         self.cosine = cosine    # if cosine = True, we use the cosine similarity; otherwise, we use pearson correlation
     
         
-    def cosine_similarity(self) -> np.ndarray:
-        sim = 1 - pairwise_distances(self.normalized_utility_matrix, metric='cosine')
+    def cosine_similarity(self, normalized_utility_matrix) -> np.ndarray:
+        sim = 1 - pairwise_distances(normalized_utility_matrix, metric='cosine')
         sim[np.isnan(sim)] = 0  # Replace NaN with 0
         return sim
     
     
-    def pearson_correlation(self) -> np.ndarray:
-        corr = np.corrcoef(self.normalized_utility_matrix)
+    def pearson_correlation(self, normalized_utility_matrix) -> np.ndarray:
+        corr = np.corrcoef(normalized_utility_matrix)
         corr[np.isnan(corr)] = 0  # Replace NaN with 0
         return corr
 
     
     def predict_ratings(self) -> np.ndarray:
         pred = np.zeros_like(self.normalized_utility_matrix, dtype=float)
-        similarity_matrix = (
-            self.cosine_similarity_matrix if self.cosine else self.pearson_similarity_matrix
-        )
         if self.uu_cf:
+            similarity_matrix = (
+            self.cosine_similarity(self.normalized_utility_matrix) if self.cosine else self.pearson_correlation(self.normalized_utility_matrix)
+            )
             for u in range(similarity_matrix.shape[0]):
                 top_k_neighbors = np.argsort(similarity_matrix[u, :])[-self.k_neighbors:][::-1]
                 
@@ -61,6 +59,9 @@ class NeighborhoodCF:
                         )
                         pred[u, m] = self.mean_ratings[u] + (weighted_sum / sim_sum)
         else:
+            similarity_matrix = (
+            self.cosine_similarity(self.normalized_utility_matrix.T) if self.cosine else self.pearson_correlation(self.normalized_utility_matrix.T)
+            )
             for m in range(similarity_matrix.shape[1]):
                 top_k_neighbors = np.argsort(similarity_matrix[:, m])[-self.k_neighbors:][::-1]
                 
@@ -76,7 +77,7 @@ class NeighborhoodCF:
                         pred[u, m] = self.mean_ratings[u] + (weighted_sum / sim_sum)
         # Replace NaN with 0 in prediction matrix
         pred[np.isnan(pred)] = 0
-        return pred
+        return pred, len(similarity_matrix)
 
         
         
