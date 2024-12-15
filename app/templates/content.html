@@ -1,18 +1,88 @@
-<!-- content.html -->
+<!--content.html-->
 <!DOCTYPE html>
-<html lang = 'en'>
+<html lang="en">
 <head>
-    <meta charset = "UTF-8">
-    <meta name = "viewport" content = "width = device-width, initial-scale = 1.0">
-    <title> {{ item['name'] }}</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ movie['name'] }}</title>
+    <link rel="stylesheet" href="../static/css/content.css">
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const stars = document.querySelectorAll('.star');
+            const userRating = "{{ user_rating if user_rating else 0 }}";
+            const isGuest = "{{ 'true' if is_guest else 'false' }}";
+
+            function updateStars(rating) {
+                stars.forEach((star, index) => {
+                    star.classList.toggle('rated', index < rating);
+                });
+            }
+
+            updateStars(userRating);
+
+            stars.forEach((star, index) => {
+                star.addEventListener('click', () => {
+                    if (isGuest === 'true') {
+                        alert('Guests cannot rate movies. Please log in.');
+                        return;
+                    }
+
+                    const rating = index + 1;
+                    updateStars(rating);
+
+                    fetch('{{ url_for("content", content_id=movie["fid"]) }}', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ rating })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert('Rating updated successfully!');
+                        } else {
+                            alert('Error updating rating. Please try again.');
+                        }
+                    })
+                    .catch(error => console.error('Error:', error));
+                });
+            });
+        });
+    </script>
 </head>
 <body>
-    <h1>{{ item['name'] }}</h1>
-    <p><strong>Description: </strong>{{ item['description'] }}</p>
-    <p><strong>Rating: </strong>{{ item['ratingValue'] }} ({{ item['ratingCount']}} reviews)</p>
-    <p><strong>Genre: </strong>{{ item['genre'] }}</p>
-    <p><strong>Duration: </strong>{{ item['duration'] }} seconds</p>
+    <header>
+        <div class="back-button">
+            <a href="{{ url_for('main') }}">← Back</a>
+        </div>
+        <div class="header-content">
+            <h1>Film Finder</h1>
+        </div>
+    </header>
+    <main>
+        <div class="content-container">
+            <div class="poster-container">
+                <img src="{{ movie.image }}" alt="Movie Poster" class="poster">
+            </div>
 
-    <a href = "{{url_for('main')}}">Back To Main Page</a>
+            <div class="details-container">
+                <h2>{{ movie.name }}</h2>
+                <p><strong>Description:</strong> {{ movie.description }}</p>
+                <p><strong>Genre:</strong> {{ movie.genre }}</p>
+                <p><strong>Duration:</strong> {{ movie.duration }} minutes</p>
+                <p><strong>Director:</strong> {{ movie.director }}</p>
+                <p><strong>Cast:</strong> {{ movie.actor }}</p>
+                <p><strong>Release Date:</strong> {{ movie.datePublished }}</p>
+
+                <div class="rating">
+                    <p>Your Rating:</p>
+                    <div class="stars">
+                        {% for i in range(10) %}
+                            <span class="star{% if user_rating and i < user_rating %} active{% endif %}" data-value="{{ i + 1 }}">★</span>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
 </body>
 </html>

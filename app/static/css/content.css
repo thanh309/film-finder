@@ -1,0 +1,103 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f9f9f9;
+}
+
+header {
+    background-color: #333;
+    color: white;
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+header back-button {
+    color: white;
+    text-decoration: none;
+    font-size: 20px;
+}
+
+header h1 {
+    margin: 0;
+}
+
+header form {
+    display: flex;
+    gap: 10px;
+}
+
+header input[type="text"] {
+    padding: 5px;
+    border: none;
+    border-radius: 3px;
+}
+
+header button {
+    background-color: #ffffff;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    cursor: pointer;
+}
+
+main {
+    padding: 20px;
+    max-width: 1000px;
+    margin: 20px auto;
+    background-color: white;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    border-radius: 5px;
+}
+
+.content-container {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+}
+
+.poster-container {
+    flex: 1;
+    text-align: center;
+}
+
+.poster {
+    max-width: 100%;
+    border-radius: 5px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+}
+
+.details-container {
+    flex: 2;
+}
+
+.details-container h2 {
+    color: #333;
+    margin-top: 0;
+}
+
+.details-container p {
+    margin: 5px 0;
+    line-height: 1.6;
+}
+
+.rating {
+    margin-top: 20px;
+}
+
+.stars {
+    display: flex;
+    gap: 5px;
+}
+
+.star {
+    font-size: 30px;
+    color: grey;
+    cursor: pointer;
+}
+
+.star.active {
+    color: gold;
+}
