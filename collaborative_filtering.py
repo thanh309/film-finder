@@ -147,7 +147,7 @@ class NeighborhoodCF:
                 
  
 class MatrixFactorizationCF: 
-    def __init__(self, R: np.ndarray, K: int =20, learning_rate: float =0.005, epochs: int = 30, regularization: float = 0.02, uu_mf: bool =True, min_rating: float = 1.0, max_rating: float = 10.0) -> None:      
+    def __init__(self, R: np.ndarray, K: int =20, learning_rate: float =0.005, epochs: int = 30, regularization: float = 0.02, uu_mf: bool =True, min_rating: float = 1.0, max_rating: float = 10.0) -> float:      
         self.R = R
         self.num_users, self.num_movies = self.R.shape
         self.K = K    # number of latent features 
@@ -165,7 +165,7 @@ class MatrixFactorizationCF:
         self.b_m = None 
         self.mu = None 
     
-    def train(self) -> None:     
+    def train(self, validation_data: np.ndarray =None) -> None:     
         # Initialize latent feature matrices 
         self.P = np.random.normal(scale=1./self.K, size=(self.num_users, self.K))
         self.Q = np.random.normal(scale=1./self.K, size=(self.num_movies, self.K))
@@ -181,6 +181,8 @@ class MatrixFactorizationCF:
             for j in range(self.num_movies)
             if self.R[i, j] > 0
         ]
+        
+        best_val_rmse = float('inf')  # Track the best validation RMSE
         
         # Perform SGD for each epoch 
         for epoch in range(self.epochs): 
@@ -208,9 +210,32 @@ class MatrixFactorizationCF:
                     self.b_m[j] ** 2
                 )
         
-            rmse = np.sqrt(total_loss / len(self.samples))
-            print(f'Epoch: {epoch + 1} - RMSE: {rmse:.4f}')
+            train_rmse = np.sqrt(total_loss / len(self.samples))
+            
+            # Validation loss calculation 
+            if validation_data is not None:
+                val_loss = 0
+                val_samples = [
+                    (i, j, validation_data[i, j])
+                    for i in range(self.num_users)
+                    for j in range(self.num_movies)
+                    if validation_data[i, j] > 0
+                ]
+                for i, j, r in val_samples:
+                    pred = self.predict_single(i, j, clip=True)
+                    e = r - pred
+                    val_loss += e**2
+                val_rmse = np.sqrt(val_loss / len(val_samples))
                 
+                # Update best validation RMSE
+                if val_rmse < best_val_rmse: 
+                    best_val_rmse = val_rmse
+                    
+                print(f'Epoch: {epoch + 1} - Train RMSE: {train_rmse:.4f}, Validation RMSE: {val_rmse:.4f}')
+            else:
+                print(f'Epoch: {epoch + 1} - Train RMSE: {train_rmse:.4f}')
+        
+        return float(best_val_rmse)
     
     def predict_single(self, i: int, j: int, clip: bool =True) -> float: 
         pred = self.mu + self.b_u[i] + self.b_m[j] + np.dot(self.P[i, :], self.Q[j, :].T)
@@ -351,28 +376,12 @@ def train_validation_split(R: np.ndarray, validation_ratio: float = 0.2, seed: i
 
 
 def mf_hyperparameter_tuning(
-    R: np.ndarray,
+    train_R: np.ndarray,
     hyperparameter_combinations: list,
-    validation_ratio: float = 0.2
+    val_R: np.ndarray
 ) -> pd.DataFrame:
-    """
-    Perform hyperparameter tuning for the MatrixFactorizationCF model.
     
-    Parameters:
-    - R (np.ndarray): Original user-item rating matrix.
-    - user_ids (List[int]): List of unique UserIDs.
-    - movie_ids (List[int]): List of unique MovieIDs.
-    - hyperparameter_combinations (List[Tuple[int, float, float, int]]): List of hyperparameter tuples.
-    - validation_ratio (float): Proportion of ratings to include in the validation set.
-    - top_n (int): Number of top recommendations to consider during evaluation.
-    
-    Returns:
-    - results_df (pd.DataFrame): DataFrame containing hyperparameters and corresponding validation RMSE.
-    """
     results = []
-    
-    # Split the data once to ensure consistency across hyperparameter evaluations
-    train_R, validation_R = train_validation_split(R, validation_ratio=validation_ratio)
     
     for idx, (K, lr, reg, epochs) in enumerate(hyperparameter_combinations):
         print(f"Evaluating combination {idx + 1}/{len(hyperparameter_combinations)}: K={K}, lr={lr}, reg={reg}, epochs={epochs}")
@@ -388,27 +397,7 @@ def mf_hyperparameter_tuning(
             min_rating=1.0,
             max_rating=10.0
         )
-        mf.train()
-        
-        # Generate predictions
-        predicted_R = mf.full_prediction()
-        
-        # Evaluate on validation set
-        # Only consider non-zero entries in validation_R
-        val_users, val_items = np.where(validation_R > 0)
-        val_true = validation_R[val_users, val_items]
-        val_pred = predicted_R[val_users, val_items]
-        
-        # Filter out NaN values
-        valid_indices = ~np.isnan(val_true) & ~np.isnan(val_pred)
-        val_true = val_true[valid_indices]
-        val_pred = val_pred[valid_indices]
-        
-        # Calculate RMSE
-        if len(val_true) > 0:  # Ensure no empty array
-            rmse = root_mean_squared_error(val_true, val_pred) 
-        else:
-            rmse = float('inf')  # Handle edge case of no valid comparisons
+        best_val_rmse = mf.train(val_R)
         
         # Record the results
         results.append({
@@ -416,7 +405,7 @@ def mf_hyperparameter_tuning(
             'learning_rate': lr,
             'regularization': reg,
             'epochs': epochs,
-            'validation_RMSE': rmse
+            'validation_RMSE': best_val_rmse
         })
     
     # Convert results to DataFrame
@@ -429,18 +418,7 @@ def neighborhood_hyperparameter_tuning(
     hyperparameter_combinations: list,
     validation_ratio: float = 0.2
 ) -> pd.DataFrame:
-    """
-    Tune hyperparameters for NeighborhoodCF using grid search.
-
-    Args:
-        utility_matrix (np.ndarray): User-item utility matrix.
-        movies (pd.DataFrame): DataFrame containing movie information.
-        users (pd.DataFrame): DataFrame containing user information.
-        hyperparameter_combinations (list): List of all hyperparameter combinations to test.
-
-    Returns:
-        results_df (pd.DataFrame): DataFrame containing hyperparameters and corresponding validation RMSE.
-    """
+    
     results = []
     
     # Split the data once to ensure consistency across hyperparameter evaluations
@@ -483,3 +461,36 @@ def neighborhood_hyperparameter_tuning(
     # Convert results to DataFrame
     results_df = pd.DataFrame(results)
     return results_df
+
+
+def eval(
+    predicted_ratings: pd.DataFrame, 
+    test_data: pd.DataFrame,
+    users: pd.DataFrame,
+    movies: pd.DataFrame
+) -> float: 
+    
+    # Map user and movie IDs to indices 
+    vectorized_users_id_to_index = users_id_to_index_vect(users)
+    vectorized_movies_id_to_index = movies_id_to_index_vect(movies)
+    
+    # Extract true rating and predicted rating 
+    true_ratings = []
+    pred_ratings = []
+    
+    for _, row in test_data.iterrows():
+        user_id = row['UserID']
+        movie_id = row['MovieID']
+        true_rating = row['Rating']
+        
+        user_idx = int(vectorized_users_id_to_index(user_id))
+        movie_idx = int(vectorized_movies_id_to_index(movie_id))
+        
+        pred_rating = predicted_ratings[user_idx, movie_idx]
+        
+        true_ratings.append(true_rating)
+        pred_ratings.append(pred_rating)
+        
+    rmse = float(root_mean_squared_error(true_ratings, pred_ratings))
+    
+    return rmse
