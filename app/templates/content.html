@@ -14,9 +14,16 @@
 
             function updateStars(rating) {
                 stars.forEach((star, index) => {
-                    star.classList.toggle('rated', index < rating);
+                    // Clear both 'active' and 'rated' classes
+                    star.classList.remove('active', 'rated');
+                    // Add the 'rated' class based on the new rating
+                    if (index < rating) {
+                        star.classList.add('rated');
+                    }
                 });
             }
+
+
 
             updateStars(userRating);
 
@@ -68,7 +75,8 @@
                 <h2>{{ movie.name }}</h2>
                 <p><strong>Description:</strong> {{ movie.description }}</p>
                 <p><strong>Genre:</strong> {{ movie.genre }}</p>
-                <p><strong>Duration:</strong> {{ movie.duration }} minutes</p>
+                <p><strong>Rating: </strong> {{ movie.ratingValue}} ({{movie.ratingCount}} reviews)</p>
+                <p><strong>Duration:</strong> {{ movie.duration }} seconds</p>
                 <p><strong>Director:</strong> {{ movie.director }}</p>
                 <p><strong>Cast:</strong> {{ movie.actor }}</p>
                 <p><strong>Release Date:</strong> {{ movie.datePublished }}</p>

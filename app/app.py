@@ -30,10 +30,20 @@ def load_ratings():
     ratings['rating'] = ratings['rating'].astype(int)
     return ratings
 
-
 def save_new_rating(user_id, film_id, rating):
-    new_data = pd.DataFrame([[user_id, film_id, rating]], columns=['user_id', 'film_id', 'rating'])
-    new_data.to_csv(rating_add, mode='a', header=False, index=False)
+    df = pd.read_csv(rating_add, names = ['user_id', 'film_ids', 'rating'])
+    df['user_id'] = df['user_id'].astype(str)
+    df['film_ids'] = df['film_ids'].astype(str)
+    new_row = {'user_id': user_id, 'film_ids': film_id, 'rating': rating}
+    condition = (df['user_id'] == str(user_id)) & (df['film_ids'] == str(film_id))
+    if condition.any():
+        df.loc[condition, 'rating'] = rating
+    else:
+        df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
+
+    df = df.drop_duplicates(subset=['user_id', 'film_ids'], keep='last')
+
+    df.to_csv(rating_add, mode = 'w', header = False, index=False)
 
 db_movie = load_movies()
 db_users = load_ratings()
@@ -125,5 +135,5 @@ def logout():
     return redirect(url_for('login'))
 
 if __name__ == '__main__':
-    app.run(debug = True)
+    app.run(host = '0.0.0.0', debug = True)
 
