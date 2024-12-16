@@ -36,7 +36,7 @@ def index_to_movies_id_vect(movies: pd.DataFrame) -> np.vectorize:
     return build_vector(movies)[0]
 
 
-def movies_id_to_idex_vect(movies: pd.DataFrame) -> np.vectorize:
+def movies_id_to_index_vect(movies: pd.DataFrame) -> np.vectorize:
     return build_vector(movies)[1]
 
 
@@ -44,7 +44,7 @@ def index_to_users_id_vect(users: pd.DataFrame) -> np.vectorize:
     return build_vector(users)[0]
 
 
-def users_id_to_idex_vect(users: pd.DataFrame) -> np.vectorize: 
+def users_id_to_index_vect(users: pd.DataFrame) -> np.vectorize: 
     return build_vector(users)[1]
 
 
