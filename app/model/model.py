@@ -22,9 +22,8 @@ class Movie(db.Model):
 class Rating(db.Model):
     __tablename__ = 'ratings'
 
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    user_id = db.Column(db.String(100), nullable=False)
-    film_ids = db.Column(db.Integer, db.ForeignKey('movies.fid'), nullable=False)
+    user_id = db.Column(db.String(100), primary_key = True)
+    film_ids = db.Column(db.Integer, db.ForeignKey('movies.fid'), primary_key = True)
     rating = db.Column(db.Integer, nullable=False)
 
     movie = db.relationship('Movie', backref=db.backref('ratings', lazy=True))

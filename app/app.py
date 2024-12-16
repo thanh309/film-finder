@@ -1,14 +1,10 @@
 from flask import Flask, request, session, redirect, url_for, render_template
-import pandas as pd
-import os
 from sqlalchemy.exc import SQLAlchemyError
 from model.model import db, Movie, Rating
 
-
 app = Flask(__name__)
-app.secret_key = 'filmfinder'
-
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///movies_ratings.db'
+app.config['SECRET_KEY'] = 'filmfinder'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///D:/Hust/kynam/Intro to DS/Project/film-finder/app/movies_ratings.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
@@ -39,8 +35,8 @@ def main():
     display_index_you_may_like = int(request.args.get('display_index_you_may_like', 0))
     display_index_highest_rated = int(request.args.get('display_index_highest_rated', 0))
 
-    highest_rated_movies = Movie.query.order_by(Movie.ratingValue.desc()).all()
-    you_may_like_movies = [] if is_guest else Movie.query.order_by(Movie.ratingValue.asc()).all()
+    highest_rated_movies = Movie.query.order_by(Movie.ratingValue.desc()).limit(30).all()
+    you_may_like_movies = [] if is_guest else Movie.query.order_by(Movie.ratingValue.asc()).limit(30).all()
 
     search_query = request.form.get('search', '').lower() if request.method == 'POST' else ''
     filtered_movies = []
@@ -87,21 +83,38 @@ def content(content_id):
         data = request.get_json()
         new_rating = data.get('rating')
         
+        # if new_rating and isinstance(new_rating, int) and 1 <= new_rating <= 10:
+        #     if user_rating is None:
+        #         db_users.loc[len(db_users)] = {'user_id': user_id, 'film_ids': content_id, 'rating': new_rating}
+        #         save_new_rating(user_id, content_id, new_rating)
+        #     else:
+        #         db_users.loc[(db_users['user_id'] == user_id) & (db_users['film_ids'] == content_id), 'rating'] = new_rating
+        #         save_new_rating(user_id, content_id, new_rating)
+        #     return {'success': True}, 200
+        # else:
+        #     return {'success': False, 'error': 'Invalid rating'}, 400
+
         if new_rating and isinstance(new_rating, int) and 1 <= new_rating <= 10:
-            if user_rating is None:
-                db_users.loc[len(db_users)] = {'user_id': user_id, 'film_ids': content_id, 'rating': new_rating}
-                save_new_rating(user_id, content_id, new_rating)
-            else:
-                db_users.loc[(db_users['user_id'] == user_id) & (db_users['film_ids'] == content_id), 'rating'] = new_rating
-                save_new_rating(user_id, content_id, new_rating)
-            return {'success': True}, 200
+            try:
+                if user_rating:
+                    user_rating.rating = new_rating
+                else:
+                    new_rating_entry = Rating(user_id = user_id, film_ids = content_id, rating = new_rating)
+                    db.session.add(new_rating_entry)
+                
+                db.session.commit()
+                return {'success': True}, 200
+            
+            except SQLAlchemyError as e:
+                db.session.rollback()
+                return{'success': False, 'error': str(e)}, 500
         else:
             return {'success': False, 'error': 'Invalid rating'}, 400
 
     return render_template(
         'content.html',
         movie=movie,
-        user_rating=user_rating,
+        user_rating=user_rating.rating if user_rating else None,
         is_guest=is_guest
     )
 
