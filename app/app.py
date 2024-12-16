@@ -4,7 +4,7 @@ from model.model import db, Movie, Rating
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'filmfinder'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///D:/Hust/kynam/Intro to DS/Project/film-finder/app/movies_ratings.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///D:/others/film-finder/app/movies_ratings.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
@@ -60,6 +60,21 @@ def main():
         display_index_you_may_like=display_index_you_may_like,
         display_index_highest_rated=display_index_highest_rated
     )
+
+@app.route('/update_you_may_like')
+def update_you_may_like():
+    offset = int(request.args.get('offset', 0))
+    you_may_like_movies = Movie.query.order_by(Movie.ratingValue.asc()).offset(offset).limit(5).all()
+    movies = [{'fid': movie.fid, 'name': movie.name, 'image': movie.image} for movie in you_may_like_movies]
+    return {'movies': movies}
+
+@app.route('/update_highest_rated')
+def update_highest_rated():
+    offset = int(request.args.get('offset', 0))
+    highest_rated_movies = Movie.query.order_by(Movie.ratingValue.desc()).offset(offset).limit(5).all()
+    movies = [{'fid': movie.fid, 'name': movie.name, 'image': movie.image} for movie in highest_rated_movies]
+    return {'movies': movies}
+
 
 @app.route('/content/<int:content_id>', methods=['GET', 'POST'])
 def content(content_id):
