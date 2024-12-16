@@ -1,0 +1,33 @@
+<!-- login.html -->
+<!DOCTYPE html>
+
+<html lang = 'en'>
+<head>
+    <meta charset = 'UTF-8'>
+    <meta name = 'viewpoint' content = "width = device-width, initial-scale = 1.0">
+    <title> Login </title>
+    <link rel = "stylesheet" href = "../static/css/login.css">
+</head>
+
+<body>
+    <img src = "../static/images/logo.png" alt = "Logo" class = "logo">
+    <div class = "login-box">
+        <h1>Login</h1>
+        {% if error %}
+            <p class = 'error-message'>{{error}}</p>
+        {% endif %}
+        <form method = 'POST'>
+            <input type = "text" id = "username" name = "username" placeholder="Enter userid" required>
+            <button type = "submit">Login</button>
+        </form>
+
+        <form method = "POST">
+            <input type="hidden" name="username" value="guest">
+            <button type="submit" class="guest-button">Continue as Guest</button>
+        </form>
+    </div>
+    
+</body>
+
+</html>
+
