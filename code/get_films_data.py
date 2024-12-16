@@ -124,6 +124,6 @@ def main(fids):
             result = process_film(fid)
             if result:
                 fw.write(result)
-            time.sleep(5)
+            time.sleep(4)
 
 main(fids)
