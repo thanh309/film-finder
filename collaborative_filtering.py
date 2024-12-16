@@ -306,7 +306,6 @@ def find_nonzero_mean_ratings(utility_matrix: np.ndarray) -> np.ndarray:
     mean_ratings[np.isnan(mean_ratings)] = 0
     
     return mean_ratings
-
     
 
 def normalize(utility_matrix: np.ndarray) -> np.ndarray:
@@ -351,13 +350,10 @@ def train_validation_split(R: np.ndarray, validation_ratio: float = 0.2, seed: i
     return train_R, validation_R
 
 
-def hyperparameter_tuning(
+def mf_hyperparameter_tuning(
     R: np.ndarray,
-    user_ids: list[int],
-    movie_ids: list[int],
-    hyperparameter_combinations: list[tuple[int, float, float, int]],
-    validation_ratio: float = 0.2,
-    top_n: int = 5
+    hyperparameter_combinations: list,
+    validation_ratio: float = 0.2
 ) -> pd.DataFrame:
     """
     Perform hyperparameter tuning for the MatrixFactorizationCF model.
@@ -428,3 +424,62 @@ def hyperparameter_tuning(
     return results_df
 
 
+def neighborhood_hyperparameter_tuning(
+    R: np.ndarray,
+    hyperparameter_combinations: list,
+    validation_ratio: float = 0.2
+) -> pd.DataFrame:
+    """
+    Tune hyperparameters for NeighborhoodCF using grid search.
+
+    Args:
+        utility_matrix (np.ndarray): User-item utility matrix.
+        movies (pd.DataFrame): DataFrame containing movie information.
+        users (pd.DataFrame): DataFrame containing user information.
+        hyperparameter_combinations (list): List of all hyperparameter combinations to test.
+
+    Returns:
+        results_df (pd.DataFrame): DataFrame containing hyperparameters and corresponding validation RMSE.
+    """
+    results = []
+    
+    # Split the data once to ensure consistency across hyperparameter evaluations
+    train_R, validation_R = train_validation_split(R, validation_ratio=validation_ratio)
+    
+    for idx, (k, uu_cf, cosine) in enumerate(hyperparameter_combinations): 
+        print(f"Evaluating combination {idx + 1}/{len(hyperparameter_combinations)}: k_neighbors={k}, uu_cf={uu_cf}, cosine={cosine}")
+        
+        # Initialize the model with current hyperparameters 
+        neighborhood_cf = NeighborhoodCF(utility_matrix=train_R, k_neighbors=k, uu_cf=uu_cf, cosine=cosine)
+        
+        # Generate predictions
+        predicted_R = neighborhood_cf.predict_ratings()[0]
+        
+        # Evaluate on validation set
+        # Only consider non-zero entries in validation_R
+        val_users, val_items = np.where(validation_R > 0)
+        val_true = validation_R[val_users, val_items]
+        val_pred = predicted_R[val_users, val_items]
+        
+        # Filter out NaN values
+        valid_indices = ~np.isnan(val_true) & ~np.isnan(val_pred)
+        val_true = val_true[valid_indices]
+        val_pred = val_pred[valid_indices]
+        
+        # Calculate RMSE
+        if len(val_true) > 0:  # Ensure no empty array
+            rmse = root_mean_squared_error(val_true, val_pred) 
+        else:
+            rmse = float('inf')  # Handle edge case of no valid comparisons
+
+        # Log results
+        results.append({
+            'k_neighbors': k,
+            'uu_cf': uu_cf,
+            'cosine': cosine,
+            'rmse': rmse
+        })
+        
+    # Convert results to DataFrame
+    results_df = pd.DataFrame(results)
+    return results_df
