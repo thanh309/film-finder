@@ -402,7 +402,17 @@ def hyperparameter_tuning(
         val_users, val_items = np.where(validation_R > 0)
         val_true = validation_R[val_users, val_items]
         val_pred = predicted_R[val_users, val_items]
-        rmse = root_mean_squared_error(val_true, val_pred)
+        
+        # Filter out NaN values
+        valid_indices = ~np.isnan(val_true) & ~np.isnan(val_pred)
+        val_true = val_true[valid_indices]
+        val_pred = val_pred[valid_indices]
+        
+        # Calculate RMSE
+        if len(val_true) > 0:  # Ensure no empty array
+            rmse = root_mean_squared_error(val_true, val_pred) 
+        else:
+            rmse = float('inf')  # Handle edge case of no valid comparisons
         
         # Record the results
         results.append({
