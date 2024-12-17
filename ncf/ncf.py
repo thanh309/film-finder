@@ -3,6 +3,7 @@ import torch
 from sklearn import preprocessing
 import joblib
 import torch.nn as nn
+import os
 
 class RecSysModel(nn.Module):
     def __init__(self, num_users, num_items, layers, reg_layers):
@@ -54,8 +55,16 @@ epochs = 40
 k = 25
 threshold = 6
 
-df_test = pd.read_csv(f'{RATINGS_DIR}/ratings_test.csv', header=None, dtype='int32')
-df_test.columns = ['uid', 'fid', 'rating']
+rating_files = ['ratings_train.csv','ratings_val.csv','ratings_test.csv']
+ratings_dataframes = []
+for file in rating_files:
+    file_path = os.path.join(RATINGS_DIR, file)
+    try:
+        df = pd.read_csv(file_path, delimiter=',', header=None, names=['uid','fid', 'rating'])
+        ratings_dataframes.append(df)
+    except Exception as e:
+        print(f"Error reading {file}: {e}")
+df_test = pd.concat(ratings_dataframes[0:2], ignore_index=True)
 
 label_enc_uid: preprocessing.LabelEncoder = joblib.load(f'{CHECKPOINT_PATH}/label_enc_uid.pkl')
 label_enc_fid: preprocessing.LabelEncoder = joblib.load(f'{CHECKPOINT_PATH}/label_enc_fid.pkl')
