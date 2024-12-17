@@ -16,7 +16,6 @@ db.init_app(app)
 with app.app_context():
     users = db.session.query(Rating.user_id).distinct().all()
     users = [int(u[0]) for u in users]
-    print(users)
 
 @app.route('/', methods = ['GET', 'POST'])
 def login():
