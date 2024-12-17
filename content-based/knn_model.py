@@ -174,13 +174,40 @@ def calculate_precision_recall_for_recommendations(user_id, recommendations, tes
     return precision, recall
 
 
-for i in range(1):
-    user = ratings_dataframes[2]['user_id'].iloc[i]  # Lấy user_id từ ratings_test.csv
-    recommendations = predict_film_unwatch(user)
-    print(f"User {user} recommendations: {recommendations}")
-    precision, recall = calculate_precision_recall_for_recommendations(user, recommendations, test_ratings_data, k=25)
+from tqdm import tqdm
 
-    print("Evaluation Metrics:")
-    print(f"Precision: {precision:.2f}")
-    print(f"Recall: {recall:.2f}")
+def eval(ratings_data, test_ratings_data, k=25, threshold=6):
+    avg_precision = 0.0
+    avg_recall = 0.0
+    best_f1_score = 0.0 
     
+    user_ratings_comparison = {}
+    for user_id in tqdm(ratings_data['user_id'].unique(), desc="Evaluating Users"):
+        recommendations = predict_film_unwatch(user_id)
+        precision, recall = calculate_precision_recall_for_recommendations(user_id, recommendations, test_ratings_data, k, threshold)
+        avg_precision += precision
+        avg_recall += recall
+
+    num_users = len(ratings_data['user_id'].unique())
+    avg_precision /= num_users
+    avg_recall /= num_users
+
+    f1_score = (2 * avg_precision * avg_recall) / (avg_precision + avg_recall) if (avg_precision + avg_recall) != 0 else 0
+    
+    print(f'Precision: {avg_precision:.4f}, Recall: {avg_recall:.4f}, F1-Score: {f1_score:.4f}')
+    
+    if f1_score > best_f1_score:
+        best_f1_score = f1_score
+    else:
+        print("F1-score did not improve.")
+
+
+
+user_ids = ratings_data['user_id'].unique()  # Get unique user IDs
+sampled_user_ids = np.random.choice(user_ids, size=int(len(user_ids) * 0.01), replace=False)  # 1% of users
+ratings_data_sampled = ratings_data[ratings_data['user_id'].isin(sampled_user_ids)]
+test_ratings_data_sampled = test_ratings_data[test_ratings_data['user_id'].isin(sampled_user_ids)]
+
+# print(len(ratings_data_sampled), len(test_ratings_data_sampled))
+
+# eval(ratings_data_sampled, test_ratings_data_sampled)
