@@ -78,10 +78,22 @@ def main():
 
 @app.route('/update_you_may_like')
 def update_you_may_like():
+    user_id = session.get('user', 'guest')
     offset = int(request.args.get('offset', 0))
-    you_may_like_movies = Movie.query.order_by(Movie.ratingValue.asc()).offset(offset).limit(5).all()
+    limit = 5  
+
+    recommended_fids = recommend_top_movies(user_id) 
+    if isinstance(recommended_fids, list):
+        recommended_fids = [int(fid) for fid in recommended_fids]
+    you_may_like_movies = (
+        Movie.query.filter(Movie.fid.in_(recommended_fids))
+        .offset(offset)
+        .limit(limit)
+        .all()
+    )
     movies = [{'fid': movie.fid, 'name': movie.name, 'image': movie.image} for movie in you_may_like_movies]
     return {'movies': movies}
+
 
 @app.route('/update_highest_rated')
 def update_highest_rated():
