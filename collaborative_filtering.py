@@ -1,10 +1,12 @@
 import pandas as pd 
 import numpy as np 
+import joblib 
 from scipy.sparse import csr_matrix
 from sklearn.metrics.pairwise import pairwise_distances
 from sklearn.metrics import root_mean_squared_error
 from utilities import * 
 
+from collections import defaultdict
 rounding_func = np.vectorize(rounding)
 
 '''
@@ -82,7 +84,7 @@ class NeighborhoodCF:
 
         
         
-    def recommend(self, id: int, predicted_ratings: np.ndarray, movies: pd.DataFrame, users: pd.DataFrame, top_n:int =5) -> list:
+    def recommend(self, id: int, predicted_ratings: np.ndarray, movies: pd.DataFrame, users: pd.DataFrame, top_n:int =25) -> list:
         if self.uu_cf:      # here, id is the user_id, we are recommend movies for user
             user_id = id 
             vectorized_index_to_movies_id = index_to_movies_id_vect(movies)
@@ -128,7 +130,7 @@ class NeighborhoodCF:
             for u in range(self.utility_matrix.shape[0]):
                 user_id = vectorized_index_to_users_id(u)
                 print(f'***** Recomended Movies for User {user_id}: *****')
-                recommended = self.recommend(user_id, predicted_ratings=predicted_ratings, movies=movies, users=users, top_n=5)
+                recommended = self.recommend(user_id, predicted_ratings=predicted_ratings, movies=movies, users=users, top_n=25)
                 for movie_id, rating in recommended: 
                     print(f"Movie {movie_id}, rating: {rating}")
         
@@ -139,7 +141,7 @@ class NeighborhoodCF:
             for m in range(self.utility_matrix.shape[1]):
                 movie_id = vectorized_index_to_movies_id(m)
                 print(f'***** Recomended Users for Movie {movie_id}: *****')
-                recommended = self.recommend(movie_id, predicted_ratings=predicted_ratings, movies=movies, users=users, top_n=5)
+                recommended = self.recommend(movie_id, predicted_ratings=predicted_ratings, movies=movies, users=users, top_n=25)
                 for user_id, rating in recommended: 
                     print(f"User {user_id}, rating: {rating}")
                 
@@ -154,7 +156,11 @@ class MatrixFactorizationCF:
         self.lr = learning_rate
         self.epochs = epochs 
         self.regularization = regularization
-        self.uu_mf = uu_mf 
+        self.uu_mf = uu_mf
+        if self.uu_mf: 
+            self.checkpoint = 'best_uumf_model.joblib' 
+        else:
+            self.checkpoint = 'best_iimf_model.joblib'
         self.min_rating = min_rating 
         self.max_rating = max_rating 
         
@@ -227,11 +233,13 @@ class MatrixFactorizationCF:
                     val_loss += e**2
                 val_rmse = np.sqrt(val_loss / len(val_samples))
                 
+                print(f'Epoch: {epoch + 1} - Train RMSE: {train_rmse:.4f}, Validation RMSE: {val_rmse:.4f}')
                 # Update best validation RMSE
                 if val_rmse < best_val_rmse: 
                     best_val_rmse = val_rmse
                     
-                print(f'Epoch: {epoch + 1} - Train RMSE: {train_rmse:.4f}, Validation RMSE: {val_rmse:.4f}')
+                    # Save the model with best RMSE
+                    self.save_model(self.checkpoint)
             else:
                 print(f'Epoch: {epoch + 1} - Train RMSE: {train_rmse:.4f}')
         
@@ -250,7 +258,7 @@ class MatrixFactorizationCF:
         return pred_matrix
     
     
-    def recommend(self, id: int, predicted_R: np.ndarray, movies: pd.DataFrame, users: pd.DataFrame, top_n:int =5) -> list:
+    def recommend(self, id: int, predicted_R: np.ndarray, movies: pd.DataFrame, users: pd.DataFrame, top_n:int =25) -> list:
         if self.uu_mf:      # here, id is the user_id, we are recommend movies for user
             user_id = id 
             vectorized_index_to_movies_id = index_to_movies_id_vect(movies)
@@ -296,7 +304,7 @@ class MatrixFactorizationCF:
             for u in range(self.R.shape[0]):
                 user_id = vectorized_index_to_users_id(u)
                 print(f'***** Recomended Movies for User {user_id}: *****')
-                recommended = self.recommend(user_id, predicted_R=predicted_R, movies=movies, users=users, top_n=5)
+                recommended = self.recommend(user_id, predicted_R=predicted_R, movies=movies, users=users, top_n=25)
                 for movie_id, rating in recommended: 
                     print(f"Movie {movie_id}, rating: {rating}")
         
@@ -307,14 +315,65 @@ class MatrixFactorizationCF:
             for m in range(self.R.shape[1]):
                 movie_id = vectorized_index_to_movies_id(m)
                 print(f'***** Recomended Users for Movie {movie_id}: *****')
-                recommended = self.recommend(movie_id, predicted_R=predicted_R, movies=movies, users=users, top_n=5)
+                recommended = self.recommend(movie_id, predicted_R=predicted_R, movies=movies, users=users, top_n=25)
                 for user_id, rating in recommended: 
                     print(f"User {user_id}, rating: {rating}")
                 
                 print('------------------------------------------------------')
                 
-
+                
+    def save_model(self, filename: str) -> None:
+        """
+        Save the model parameters using joblib.
+        """
+        model_data = {
+            "K": self.K,
+            "learning_rate": self.lr,
+            "epochs": self.epochs,
+            "regularization": self.regularization,
+            "uu_mf": self.uu_mf,
+            "min_rating": self.min_rating,
+            "max_rating": self.max_rating,
+            "P": self.P,
+            "Q": self.Q,
+            "b_u": self.b_u,
+            "b_m": self.b_m,
+            "mu": self.mu
+        }
+        joblib.dump(model_data, filename)
+        print(f"Model saved to {filename}.")
+        
     
+    @classmethod
+    def load_model(cls, filename: str, R: np.ndarray):
+        """
+        Load the model parameters using joblib and return a new instance.
+        """
+        model_data = joblib.load(filename)
+        
+        # Reconstruct the model instance
+        model = cls(
+            R=R,
+            K=model_data["K"],
+            learning_rate=model_data["learning_rate"],
+            epochs=model_data["epochs"],
+            regularization=model_data["regularization"],
+            uu_mf=model_data["uu_mf"],
+            min_rating=model_data["min_rating"],
+            max_rating=model_data["max_rating"]
+        )
+        
+        # Load the trained parameters
+        model.P = model_data["P"]
+        model.Q = model_data["Q"]
+        model.b_u = model_data["b_u"]
+        model.b_m = model_data["b_m"]
+        model.mu = model_data["mu"]
+
+        print(f"Model loaded from {filename}.")
+        return model
+                
+
 def build_utility_matrix(df: pd.DataFrame) -> np.ndarray:
     utility_matrix = csr_matrix(df.pivot(index='UserID', columns='MovieID', values='Rating').fillna(0).values)
     return utility_matrix.toarray()
@@ -463,12 +522,26 @@ def neighborhood_hyperparameter_tuning(
     return results_df
 
 
+def calculate_precision_recall(user_ratings, k, threshold):
+    user_ratings.sort(key=lambda x: x[0], reverse=True)
+
+    n_rel = sum(true_r >= threshold for _, true_r in user_ratings)
+    n_rec_k = sum(est >= threshold for est, _ in user_ratings[:k])
+    n_rel_and_rec_k = sum(
+        (true_r >= threshold) and (est >= threshold) for est, true_r in user_ratings[:k]
+    )
+
+    precision = n_rel_and_rec_k / n_rec_k if n_rec_k != 0 else 1
+    recall = n_rel_and_rec_k / n_rel if n_rel != 0 else 1
+
+    return precision, recall
+
 def eval(
     predicted_ratings: pd.DataFrame, 
     test_data: pd.DataFrame,
     users: pd.DataFrame,
     movies: pd.DataFrame
-) -> float: 
+) -> dict: 
     
     # Map user and movie IDs to indices 
     vectorized_users_id_to_index = users_id_to_index_vect(users)
@@ -477,6 +550,8 @@ def eval(
     # Extract true rating and predicted rating 
     true_ratings = []
     pred_ratings = []
+    
+    mydict = defaultdict(list)
     
     for _, row in test_data.iterrows():
         user_id = row['UserID']
@@ -490,7 +565,23 @@ def eval(
         
         true_ratings.append(true_rating)
         pred_ratings.append(pred_rating)
+        mydict[user_id].append((pred_rating, true_rating))
         
-    rmse = float(root_mean_squared_error(true_ratings, pred_ratings))
+    user_ratings = list(zip(pred_ratings, true_ratings))
+        
+    rmse = root_mean_squared_error(true_ratings, pred_ratings)
     
-    return rmse
+    avg_precision = 0.0
+    avg_recall = 0.0
+
+    for user, user_ratings in mydict.items():
+        precision, recall = calculate_precision_recall(user_ratings, k=25, threshold=6)
+        avg_precision += precision
+        avg_recall += recall
+        
+    avg_precision /= len(mydict)
+    avg_recall /= len(mydict)
+    f1_score = (2 * avg_precision * avg_recall) / (avg_precision + avg_recall)
+    
+    
+    return {'RMSE': float(rmse), 'Precision': float(avg_precision), 'Recall': float(avg_recall), 'F1': float(f1_score)}
