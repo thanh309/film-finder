@@ -1,6 +1,10 @@
 from flask import Flask, request, session, redirect, url_for, render_template
 from sqlalchemy.exc import SQLAlchemyError
 from model.model import db, Movie, Rating
+from joblib import load
+from content_based.knn_model import predict_film_unwatch
+
+
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'filmfinder'
@@ -12,6 +16,8 @@ db.init_app(app)
 with app.app_context():
     users = db.session.query(Rating.user_id).distinct().all()
     users = [u[0] for u in users]
+
+# knn_model = joblib.load("content_based/")
 
 @app.route('/', methods = ['GET', 'POST'])
 def login():
@@ -36,14 +42,14 @@ def main():
     display_index_highest_rated = int(request.args.get('display_index_highest_rated', 0))
 
     highest_rated_movies = Movie.query.order_by(Movie.ratingValue.desc()).limit(30).all()
-    you_may_like_movies = [] if is_guest else Movie.query.order_by(Movie.ratingValue.asc()).limit(30).all()
-    # you_may_like_movies = (
-    #     [] if is_guest 
-    #     else db.session.query(Movie)
-    #         .join(Rating, Movie.fid == Rating.film_ids)
-    #         .filter(Rating.user_id == user_id_list)
-    #         .all()
-    # )
+    # you_may_like_movies = [] if is_guest else Movie.query.order_by(Movie.ratingValue.asc()).limit(30).all()
+    you_may_like_movies = []
+    if not is_guest:
+        recommended_fids = predict_film_unwatch(int(user_name))
+        if isinstance(recommended_fids, list):
+            recommended_fids = [int(fid) for fid in recommended_fids]
+        you_may_like_movies = Movie.query.filter(Movie.fid.in_(recommended_fids)).all()
+
     search_query = request.form.get('search', '').lower() if request.method == 'POST' else ''
     filtered_movies = []
 
