@@ -1,7 +1,6 @@
 from flask import Flask, request, session, redirect, url_for, render_template
 from sqlalchemy.exc import SQLAlchemyError
 from model.model import db, Movie, Rating
-from joblib import load
 from content_based.knn_model import predict_film_unwatch
 
 
@@ -15,17 +14,20 @@ db.init_app(app)
 
 with app.app_context():
     users = db.session.query(Rating.user_id).distinct().all()
-    users = [u[0] for u in users]
-
-# knn_model = joblib.load("content_based/")
+    users = [int(u[0]) for u in users]
+    print(users)
 
 @app.route('/', methods = ['GET', 'POST'])
 def login():
     if request.method == 'POST':    
         username = request.form['username']
+        try:
+            username_int = int(username)
+        except ValueError:
+            username_int = None
         # password = request.form['password']
-        if username in users:
-            session['user'] = username
+        if username_int in users:
+            session['user'] = username_int
             return redirect(url_for('main'))
         elif username.lower() == 'guest':
             session['user'] = 'guest'
@@ -54,7 +56,7 @@ def main():
     filtered_movies = []
 
     if search_query:
-        filtered_movies = Movie.query.filter(Movie.name.ilike(f" %{search_query}% ")).all
+        filtered_movies = Movie.query.filter(Movie.name.ilike(f" %{search_query}% ")).all()
 
     # highest_rated_movies = db_movie.sort_values(by='ratingValue', ascending=False).to_dict('records')
     # you_may_like_movies = [] if is_guest else db_movie.sample(10).sort_values(by='ratingValue', ascending = False).to_dict('records')

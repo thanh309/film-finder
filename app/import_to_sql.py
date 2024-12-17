@@ -4,8 +4,7 @@ import os
 
 # Directories
 movie_dir = "resources/data/split_film_data"
-rating_dir = "resources/ratings"
-rating_add = "resources/ratings/users_ratings_add.csv"
+rating_dir = "resources/data/split_ratings"
 
 # Function to load movies
 def load_movies():
@@ -19,7 +18,7 @@ def load_movies():
     movies['contentRating'] = movies['contentRating'].fillna('').astype(str)
     movies['genre'] = movies['genre'].fillna('').astype(str)
     movies['keywords'] = movies['keywords'].fillna('').astype(str)
-    movies['duration'] = movies['duration'].fillna(0).astype(int)
+    movies['duration'] = movies['duration'].fillna(0).astype(float)
     movies['datePublished'] = movies['datePublished'].fillna('').astype(str)
     movies['actor'] = movies['actor'].fillna('').astype(str)
     movies['director'] = movies['director'].fillna('').astype(str)
@@ -28,9 +27,9 @@ def load_movies():
 
 # Function to load ratings
 def load_ratings():
-    rating_files = [os.path.join(rating_dir, f) for f in os.listdir(rating_dir) if f.endswith('.csv')]
-    ratings = pd.concat([pd.read_csv(file, header=None, names=['user_id', 'film_ids', 'rating']) for file in rating_files], ignore_index=True)
-    ratings['user_id'] = ratings['user_id'].astype(str)
+    rating_files = [os.path.join(rating_dir, f) for f in os.listdir(rating_dir) if f.endswith('.txt')]
+    ratings = pd.concat([pd.read_csv(file, header=None, names=['user_id', 'film_ids', 'rating'], delimiter= ',') for file in rating_files], ignore_index=True)
+    ratings['user_id'] = ratings['user_id'].astype(int)
     ratings['film_ids'] = ratings['film_ids'].astype(int)
     ratings['rating'] = ratings['rating'].astype(int)
     return ratings
@@ -52,7 +51,7 @@ cursor.execute('''CREATE TABLE IF NOT EXISTS movies (
                     contentRating TEXT,
                     genre TEXT,
                     keywords TEXT,
-                    duration INTEGER DEFAULT 0,
+                    duration REAL DEFAULT 0,
                     datePublished TEXT,
                     actor TEXT,
                     director TEXT,
@@ -60,7 +59,7 @@ cursor.execute('''CREATE TABLE IF NOT EXISTS movies (
                 )''')
 
 cursor.execute('''CREATE TABLE IF NOT EXISTS ratings (
-                    user_id TEXT,
+                    user_id INTEGER,
                     film_ids INTEGER,
                     rating INTEGER NOT NULL,
                     PRIMARY KEY (user_id, film_ids),

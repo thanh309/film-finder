@@ -81,7 +81,7 @@ def predict_film_unwatch(user_id, ratings_data=ratings_data, knn=knn_loaded,comb
     
     return unique_recommendations[:n_recommendations]
 
-for i in range(3):
-    user = ratings_dataframes[2]['user_id'].iloc[i]  # Lấy user_id từ ratings_test.csv
-    recommendations = predict_film_unwatch(user)
-    print(f"User {user} recommendations: {recommendations}")
+# for i in range(3):
+#     user = ratings_dataframes[2]['user_id'].iloc[i]  # Lấy user_id từ ratings_test.csv
+#     recommendations = predict_film_unwatch(user)
+#     print(f"User {user} recommendations: {recommendations}")
