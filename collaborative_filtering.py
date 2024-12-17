@@ -365,13 +365,15 @@ class MatrixFactorizationCF:
         # Vectorized prediction for all movies: 
         # pred(u, m) = mu + b_u[u] + b_m[m] + P[u,:].dot(Q[m,:].T)
         user_pred = (self.mu 
-                     + self.b_u[user_idx] 
-                     + self.b_m 
-                     + self.P[user_idx, :].dot(self.Q.T))
+                    + self.b_u[user_idx] 
+                    + self.b_m 
+                    + self.P[user_idx, :].dot(self.Q.T))
         
+        # Clip predictions to the allowed range
+        user_pred = np.clip(user_pred, self.min_rating, self.max_rating)
         return user_pred
-    
-    
+
+
     def predict_movie_ratings(self, movie_id: int, movies: pd.DataFrame) -> np.ndarray:
         """
         Predict ratings for all users for a given movie_id.
@@ -383,12 +385,14 @@ class MatrixFactorizationCF:
         # pred(u, m) = mu + b_u[u] + b_m[m] + P[u,:].dot(Q[m,:].T)
         # Here we fix m and vary u:
         movie_pred = (self.mu
-                      + self.b_u
-                      + self.b_m[movie_idx]
-                      + self.P.dot(self.Q[movie_idx, :]))
+                    + self.b_u
+                    + self.b_m[movie_idx]
+                    + self.P.dot(self.Q[movie_idx, :]))
         
+        # Clip predictions to the allowed range
+        movie_pred = np.clip(movie_pred, self.min_rating, self.max_rating)
         return movie_pred
-    
+
     
     def full_prediction(self) -> np.ndarray:
         pred_matrix = self.mu + self.b_u[:, np.newaxis] + self.b_m[np.newaxis:, ] + self.P.dot(self.Q.T)
@@ -442,13 +446,13 @@ class MatrixFactorizationCF:
         
         
     def recommend_using_predicted_ratings(self, id: int, predicted_ratings: np.ndarray, movies: pd.DataFrame, users: pd.DataFrame, top_n:int =25) -> list:
-        if self.uu_cf:      # here, id is the user_id, we are recommend movies for user
+        if self.uu_mf:      # here, id is the user_id, we are recommend movies for user
             user_id = id 
             vectorized_index_to_movies_id = index_to_movies_id_vect(movies)
             vectorized_users_id_to_index = users_id_to_index_vect(users)
             
             user_idx = int(vectorized_users_id_to_index(user_id))
-            user_rated_indices = np.where(self.utility_matrix[user_idx, :] > 0)[0]
+            user_rated_indices = np.where(self.R[user_idx, :] > 0)[0]
             user_pred = predicted_ratings[user_idx, :].copy()
             user_pred[user_rated_indices] = -1e8    # exclude watched items
             
@@ -466,7 +470,7 @@ class MatrixFactorizationCF:
             vectorized_movies_id_to_index = movies_id_to_index_vect(movies)
 
             movie_idx = int(vectorized_movies_id_to_index(movie_id))
-            movie_rated_indices = np.where(self.utility_matrix[:, movie_idx] > 0)[0]
+            movie_rated_indices = np.where(self.R[:, movie_idx] > 0)[0]
             movie_pred = predicted_ratings[:, movie_idx].copy()
             movie_pred[movie_rated_indices] = -1e8      # exclude watched items
             
@@ -767,4 +771,4 @@ def eval(
     f1_score = (2 * avg_precision * avg_recall) / (avg_precision + avg_recall)
     
     
-    return {'RMSE': float(rmse), 'Precision': float(avg_precision), 'Recall': float(avg_recall), 'F1': float(f1_score)}
+    return {'RMSE': float(rmse), 'Precision': float(avg_precision), 'Recall': float(avg_recall), 'F1-Score': float(f1_score)}
