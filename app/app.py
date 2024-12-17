@@ -37,7 +37,13 @@ def main():
 
     highest_rated_movies = Movie.query.order_by(Movie.ratingValue.desc()).limit(30).all()
     you_may_like_movies = [] if is_guest else Movie.query.order_by(Movie.ratingValue.asc()).limit(30).all()
-
+    # you_may_like_movies = (
+    #     [] if is_guest 
+    #     else db.session.query(Movie)
+    #         .join(Rating, Movie.fid == Rating.film_ids)
+    #         .filter(Rating.user_id == user_id_list)
+    #         .all()
+    # )
     search_query = request.form.get('search', '').lower() if request.method == 'POST' else ''
     filtered_movies = []
 
@@ -132,7 +138,17 @@ def content(content_id):
         user_rating=user_rating.rating if user_rating else None,
         is_guest=is_guest
     )
-
+@app.route('/rated_movies', methods=['GET'])
+def rated_movies():
+    user_id = session.get('user', None)
+    
+    rated_movies = (
+        db.session.query(Movie)
+        .join(Rating, Movie.fid == Rating.film_ids)
+        .filter(Rating.user_id == user_id)
+        .all()
+    )
+    return render_template('rated_movies.html', rated_movies=rated_movies)
 
 
 @app.route('/logout')
@@ -142,4 +158,6 @@ def logout():
 
 if __name__ == '__main__':
     app.run(host = '0.0.0.0', debug = True)
+
+
 

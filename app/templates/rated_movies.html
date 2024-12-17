@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rated Movies</title>
+    <link rel="stylesheet" href="../static/css/main.css">
+</head>
+<body>
+    <header class="header">
+        <a href = "{{ url_for('main')}}"><img src="../static/images/logo.png" alt="Logo" class="logo"></a>
+        <div class="user-info">
+            <span>Profile</span>
+            <a href="{{ url_for('logout') }}">Logout</a>
+        </div>
+    </header>
+
+    <main class="content">
+        <h2>Your Rated Movies</h2>
+        {% if rated_movies %}
+            <div class="film-list">
+                {% for movie in rated_movies %}
+                    <div class="movie-card">
+                        <a href="{{ url_for('content', content_id=movie.fid) }}">
+                            <img src="{{ movie.image }}" alt="{{ movie.name }}" class="main-movie-image">
+                            <h3>{{ movie.name }}</h3>
+                            <p>Rating: {{ movie.ratingValue }}</p>
+                        </a>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p>You haven't rated any movies yet.</p>
+        {% endif %}
+    </main>
+</body>
+</html>

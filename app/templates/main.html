@@ -15,7 +15,8 @@
             <button type="submit">Search</button>
         </form>
         <div class="user-info">
-            <span>Welcome, {{ user_name }}</span>
+            
+            <span>Welcome, <a href="{{ url_for('rated_movies') }}">{{ user_name }}</a></span>
             <a href="{{ url_for('logout') }}">Logout</a>
         </div>
     </header>
