@@ -7,20 +7,10 @@ from scipy.sparse import hstack,csr_matrix
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.preprocessing import MinMaxScaler, OneHotEncoder
 
-KNN_MODEL_PATH = 'content_based/knn_model.joblib'
-if not os.path.exists(KNN_MODEL_PATH):
-    print(f"{KNN_MODEL_PATH} does not exist. Running content_based/cosine_matrix.py to generate the model.")
-    
-    # Chạy script cosine_matrix.py để tạo model
-    subprocess.run(['python', 'content_based/cosine_matrix.py'], check=True)
-    
-    # Sau khi script chạy xong, bạn có thể load lại model
-    knn_loaded = joblib.load(KNN_MODEL_PATH)
-    print("KNN model loaded successfully.")
-else:
-    # Nếu file đã tồn tại, chỉ cần load model
-    knn_loaded = joblib.load(KNN_MODEL_PATH)
-    print("KNN model already exists and loaded successfully.")
+KNN_MODEL_PATH = 'resources/checkpoints/knn_model.joblib'
+
+knn_loaded = joblib.load(KNN_MODEL_PATH)
+print("KNN model already exists and loaded successfully.")
 
 FILM_PATH = 'resources/cleaned_data/cleaned_data.csv'
 RATINGS_PATH ='resources/data/train_val_test'

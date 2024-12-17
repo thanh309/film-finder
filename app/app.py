@@ -1,7 +1,8 @@
 from flask import Flask, request, session, redirect, url_for, render_template
 from sqlalchemy.exc import SQLAlchemyError
 from model.model import db, Movie, Rating
-from content_based.knn_model import predict_film_unwatch
+# from content_based.knn_model import predict_film_unwatch
+from ncf.ncf import recommend_top_movies
 
 
 
@@ -47,7 +48,8 @@ def main():
     # you_may_like_movies = [] if is_guest else Movie.query.order_by(Movie.ratingValue.asc()).limit(30).all()
     you_may_like_movies = []
     if not is_guest:
-        recommended_fids = predict_film_unwatch(int(user_name))
+        # recommended_fids = predict_film_unwatch(int(user_name))
+        recommended_fids = recommend_top_movies(int(user_name))
         if isinstance(recommended_fids, list):
             recommended_fids = [int(fid) for fid in recommended_fids]
         you_may_like_movies = Movie.query.filter(Movie.fid.in_(recommended_fids)).all()
