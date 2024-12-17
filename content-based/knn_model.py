@@ -36,7 +36,7 @@ for file in rating_files:
     except Exception as e:
         print(f"Error reading {file}: {e}")
 ratings_data = pd.concat(ratings_dataframes[0:2], ignore_index=True)
-
+test_ratings_data = ratings_dataframes[2]
 data = pd.read_csv(FILM_PATH)
 columns_to_keep = ['fid', 'contentRating', 
                    'genre', 'keywords', 'duration', 'actor', 'director']
@@ -65,7 +65,7 @@ def cosine_distance(vec1, vec2):
     similarity = np.dot(vec1, vec2) / (np.linalg.norm(vec1) * np.linalg.norm(vec2))
     return 1 - similarity
 
-def all_watched_fid(user_id, ratings_data, k = 5):
+def all_watched_fid(user_id, ratings_data, k = 10):
     user_data = ratings_data[ratings_data['user_id'] == user_id]
     if len(user_data['fid'].tolist()) <5:
         k = len(user_data['fid'].tolist())
@@ -74,7 +74,7 @@ def all_watched_fid(user_id, ratings_data, k = 5):
 def predict_film_unwatch(user_id, ratings_data=ratings_data, knn=knn_loaded, 
                          combined_features_matrix=combined_features_matrix, 
                          all_film_id=all_film_id, film_id_to_index=film_id_to_index, 
-                         prefer_point=6, n_recommendations=20):
+                         prefer_point=5, n_recommendations=25):
     recommendations = []
     user_watched_fids,k = all_watched_fid(user_id, ratings_data)
     user_ratings = ratings_data[ratings_data['user_id'] == user_id]
@@ -140,7 +140,47 @@ def predict_film_unwatch(user_id, ratings_data=ratings_data, knn=knn_loaded,
             break
 
     return recommendations
+
+
+from sklearn.metrics import precision_score, recall_score, f1_score
+
+def calculate_precision_recall_for_recommendations(user_id, recommendations, test_ratings_data, k=25, threshold=6):
+    user_test_data = test_ratings_data[test_ratings_data['user_id'] == user_id]
+    test_fids = user_test_data['fid'].tolist()
+
+    filtered_recommendations = [
+        (film_id, predicted_rating) 
+        for film_id, predicted_rating in recommendations 
+        if film_id in test_fids  # Chỉ lấy các phim có trong test_ratings_data
+    ]
+
+    if not filtered_recommendations:
+        return 1, 1
+    filtered_recommendations.sort(key=lambda x: x[1], reverse=True)
+
+    n_rel = sum(true_r >= threshold for film_id in test_fids 
+               for true_r in user_test_data[user_test_data['fid'] == film_id]['rating'].tolist())
+
+    n_rec_k = sum(est >= threshold for _, est in filtered_recommendations[:k])
+
+    n_rel_and_rec_k = sum(
+        (user_test_data[user_test_data['fid'] == film_id]['rating'].iloc[0] >= threshold) and (est >= threshold)
+        for film_id, est in filtered_recommendations[:k]
+    )
+
+    precision = n_rel_and_rec_k / n_rec_k if n_rec_k != 0 else 1
+    recall = n_rel_and_rec_k / n_rel if n_rel != 0 else 1
+
+    return precision, recall
+
+
 for i in range(1):
     user = ratings_dataframes[2]['user_id'].iloc[i]  # Lấy user_id từ ratings_test.csv
     recommendations = predict_film_unwatch(user)
     print(f"User {user} recommendations: {recommendations}")
+    precision, recall = calculate_precision_recall_for_recommendations(user, recommendations, test_ratings_data, k=25)
+
+    print("Evaluation Metrics:")
+    print(f"Precision: {precision:.2f}")
+    print(f"Recall: {recall:.2f}")
+    
