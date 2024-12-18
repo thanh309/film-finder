@@ -1,10 +1,12 @@
 import pandas as pd 
 import numpy as np 
+import joblib 
 from scipy.sparse import csr_matrix
 from sklearn.metrics.pairwise import pairwise_distances
 from sklearn.metrics import root_mean_squared_error
 from utilities import * 
 
+from collections import defaultdict
 rounding_func = np.vectorize(rounding)
 
 '''
@@ -79,10 +81,113 @@ class NeighborhoodCF:
         # Replace NaN with 0 in prediction matrix
         pred[np.isnan(pred)] = 0
         return pred, len(similarity_matrix)
+    
+    
+    def predict_user_ratings(self, user_id: int, users: pd.DataFrame) -> np.ndarray:
+        """
+        Predict ratings for all movies for a single user (for user-user CF).
+        """
+        vectorized_users_id_to_index = users_id_to_index_vect(users)
+        user_idx = int(vectorized_users_id_to_index(user_id))
+
+        # Compute user-user similarity
+        if self.cosine:
+            similarity_matrix = self.cosine_similarity(self.normalized_utility_matrix)
+        else:
+            similarity_matrix = self.pearson_correlation(self.normalized_utility_matrix)
+
+        user_sims = similarity_matrix[user_idx, :]
+        top_k_neighbors = np.argsort(user_sims)[-self.k_neighbors:][::-1]
+
+        user_pred = np.zeros(self.utility_matrix.shape[1], dtype=float)
+
+        sim_sum = np.sum(np.abs(user_sims[top_k_neighbors]))
+        sim_sum = max(sim_sum, 1e-8)  # Avoid division by zero
+
+        # Compute predicted ratings for all movies for this user
+        # pred(u,m) = mean_ratings[u] + ( sum(sim(u,neighbors)*norm_utility[neighbors,m]) / sum(|sim|) )
+        weighted_sums = user_sims[top_k_neighbors].dot(self.normalized_utility_matrix[top_k_neighbors, :])
+        user_pred = self.mean_ratings[user_idx] + (weighted_sums / sim_sum)
+
+        # Replace NaN if any
+        user_pred[np.isnan(user_pred)] = 0
+        return user_pred
+    
+
+    def predict_movie_ratings(self, movie_id: int, movies: pd.DataFrame) -> np.ndarray:
+        """
+        Predict ratings for all users for a single movie (for item-item CF).
+        """
+        vectorized_movies_id_to_index = movies_id_to_index_vect(movies)
+        movie_idx = int(vectorized_movies_id_to_index(movie_id))
+
+        # Compute item-item similarity
+        if self.cosine:
+            similarity_matrix = self.cosine_similarity(self.normalized_utility_matrix.T)
+        else:
+            similarity_matrix = self.pearson_correlation(self.normalized_utility_matrix.T)
+
+        movie_sims = similarity_matrix[movie_idx, :]
+        top_k_neighbors = np.argsort(movie_sims)[-self.k_neighbors:][::-1]
+
+        sim_sum = np.sum(np.abs(movie_sims[top_k_neighbors]))
+        sim_sum = max(sim_sum, 1e-8)
+
+        # Compute predicted ratings for all users for this movie
+        # pred(u,m) = mean_ratings[u] + ( sum(sim(m,neighbors)*norm_utility[u,neighbors]) / sum(|sim|) )
+        weighted_sums = self.normalized_utility_matrix[:, top_k_neighbors].dot(movie_sims[top_k_neighbors])
+        movie_pred = self.mean_ratings + (weighted_sums / sim_sum)
+
+        movie_pred[np.isnan(movie_pred)] = 0
+        return movie_pred
+    
+    
+    def recommend(self, id: int, movies: pd.DataFrame, users: pd.DataFrame, top_n:int =25) -> list:
+        if self.uu_cf:
+            # Recommend movies for a given user
+            user_id = id
+            user_pred = self.predict_user_ratings(user_id, users)
+            
+            vectorized_index_to_movies_id = index_to_movies_id_vect(movies)
+            vectorized_users_id_to_index = users_id_to_index_vect(users)
+            
+            user_idx = int(vectorized_users_id_to_index(user_id))
+
+            # Exclude movies already rated
+            user_rated_indices = np.where(self.utility_matrix[user_idx, :] > 0)[0]
+            user_pred[user_rated_indices] = -1e8
+
+            top_movies_idx = np.argsort(user_pred)[-top_n:][::-1]
+            
+            recommend_movies = movies[movies['MovieID'].isin(vectorized_index_to_movies_id(top_movies_idx))].copy()
+            recommend_movies['predicted_score'] = rounding_func(user_pred[top_movies_idx])
+            recommend_movies = recommend_movies.sort_values('predicted_score', ascending=False)
+
+            return list(zip(recommend_movies['MovieID'].tolist(), recommend_movies['predicted_score'].tolist()))
+        else:
+            # Recommend users for a given movie
+            movie_id = id
+            movie_pred = self.predict_movie_ratings(movie_id, movies)
+
+            vectorized_index_to_users_id = index_to_users_id_vect(users)
+            vectorized_movies_id_to_index = movies_id_to_index_vect(movies)
+            
+            movie_idx = int(vectorized_movies_id_to_index(movie_id))
+
+            # Exclude users who have already rated this movie
+            movie_rated_indices = np.where(self.utility_matrix[:, movie_idx] > 0)[0]
+            movie_pred[movie_rated_indices] = -1e8
+
+            top_users_idx = np.argsort(movie_pred)[-top_n:][::-1]
+
+            recommend_users = users[users['UserID'].isin(vectorized_index_to_users_id(top_users_idx))].copy()
+            recommend_users['predicted_score'] = rounding_func(movie_pred[top_users_idx])
+            recommend_users = recommend_users.sort_values('predicted_score', ascending=False)
+
+            return list(zip(recommend_users['UserID'].tolist(), recommend_users['predicted_score'].tolist()))
 
         
-        
-    def recommend(self, id: int, predicted_ratings: np.ndarray, movies: pd.DataFrame, users: pd.DataFrame, top_n:int =5) -> list:
+    def recommend_using_predicted_ratings(self, id: int, predicted_ratings: np.ndarray, movies: pd.DataFrame, users: pd.DataFrame, top_n:int =25) -> list:
         if self.uu_cf:      # here, id is the user_id, we are recommend movies for user
             user_id = id 
             vectorized_index_to_movies_id = index_to_movies_id_vect(movies)
@@ -128,7 +233,7 @@ class NeighborhoodCF:
             for u in range(self.utility_matrix.shape[0]):
                 user_id = vectorized_index_to_users_id(u)
                 print(f'***** Recomended Movies for User {user_id}: *****')
-                recommended = self.recommend(user_id, predicted_ratings=predicted_ratings, movies=movies, users=users, top_n=5)
+                recommended = self.recommend_using_predicted_ratings(user_id, predicted_ratings=predicted_ratings, movies=movies, users=users, top_n=25)
                 for movie_id, rating in recommended: 
                     print(f"Movie {movie_id}, rating: {rating}")
         
@@ -139,7 +244,7 @@ class NeighborhoodCF:
             for m in range(self.utility_matrix.shape[1]):
                 movie_id = vectorized_index_to_movies_id(m)
                 print(f'***** Recomended Users for Movie {movie_id}: *****')
-                recommended = self.recommend(movie_id, predicted_ratings=predicted_ratings, movies=movies, users=users, top_n=5)
+                recommended = self.recommend_using_predicted_ratings(movie_id, predicted_ratings=predicted_ratings, movies=movies, users=users, top_n=25)
                 for user_id, rating in recommended: 
                     print(f"User {user_id}, rating: {rating}")
                 
@@ -147,14 +252,18 @@ class NeighborhoodCF:
                 
  
 class MatrixFactorizationCF: 
-    def __init__(self, R: np.ndarray, K: int =20, learning_rate: float =0.005, epochs: int = 30, regularization: float = 0.02, uu_mf: bool =True, min_rating: float = 1.0, max_rating: float = 10.0) -> None:      
+    def __init__(self, R: np.ndarray, K: int =20, learning_rate: float =0.005, epochs: int = 30, regularization: float = 0.02, uu_mf: bool =True, min_rating: float = 1.0, max_rating: float = 10.0) -> float:      
         self.R = R
         self.num_users, self.num_movies = self.R.shape
         self.K = K    # number of latent features 
         self.lr = learning_rate
         self.epochs = epochs 
         self.regularization = regularization
-        self.uu_mf = uu_mf 
+        self.uu_mf = uu_mf
+        if self.uu_mf: 
+            self.checkpoint = 'best_uumf_model.joblib' 
+        else:
+            self.checkpoint = 'best_iimf_model.joblib'
         self.min_rating = min_rating 
         self.max_rating = max_rating 
         
@@ -165,7 +274,7 @@ class MatrixFactorizationCF:
         self.b_m = None 
         self.mu = None 
     
-    def train(self) -> None:     
+    def train(self, validation_data: np.ndarray =None) -> None:     
         # Initialize latent feature matrices 
         self.P = np.random.normal(scale=1./self.K, size=(self.num_users, self.K))
         self.Q = np.random.normal(scale=1./self.K, size=(self.num_movies, self.K))
@@ -181,6 +290,8 @@ class MatrixFactorizationCF:
             for j in range(self.num_movies)
             if self.R[i, j] > 0
         ]
+        
+        best_val_rmse = float('inf')  # Track the best validation RMSE
         
         # Perform SGD for each epoch 
         for epoch in range(self.epochs): 
@@ -208,9 +319,34 @@ class MatrixFactorizationCF:
                     self.b_m[j] ** 2
                 )
         
-            rmse = np.sqrt(total_loss / len(self.samples))
-            print(f'Epoch: {epoch + 1} - RMSE: {rmse:.4f}')
+            train_rmse = np.sqrt(total_loss / len(self.samples))
+            
+            # Validation loss calculation 
+            if validation_data is not None:
+                val_loss = 0
+                val_samples = [
+                    (i, j, validation_data[i, j])
+                    for i in range(self.num_users)
+                    for j in range(self.num_movies)
+                    if validation_data[i, j] > 0
+                ]
+                for i, j, r in val_samples:
+                    pred = self.predict_single(i, j, clip=True)
+                    e = r - pred
+                    val_loss += e**2
+                val_rmse = np.sqrt(val_loss / len(val_samples))
                 
+                print(f'Epoch: {epoch + 1} - Train RMSE: {train_rmse:.4f}, Validation RMSE: {val_rmse:.4f}')
+                # Update best validation RMSE
+                if val_rmse < best_val_rmse: 
+                    best_val_rmse = val_rmse
+                    
+                    # Save the model with best RMSE
+                    self.save_model(self.checkpoint)
+            else:
+                print(f'Epoch: {epoch + 1} - Train RMSE: {train_rmse:.4f}')
+        
+        return float(best_val_rmse)
     
     def predict_single(self, i: int, j: int, clip: bool =True) -> float: 
         pred = self.mu + self.b_u[i] + self.b_m[j] + np.dot(self.P[i, :], self.Q[j, :].T)
@@ -219,13 +355,97 @@ class MatrixFactorizationCF:
         return pred
     
     
+    def predict_user_ratings(self, user_id: int, users: pd.DataFrame) -> np.ndarray:
+        """
+        Predict ratings for all movies for a given user_id.
+        """
+        vectorized_users_id_to_index = users_id_to_index_vect(users)
+        user_idx = int(vectorized_users_id_to_index(user_id))
+        
+        # Vectorized prediction for all movies: 
+        # pred(u, m) = mu + b_u[u] + b_m[m] + P[u,:].dot(Q[m,:].T)
+        user_pred = (self.mu 
+                    + self.b_u[user_idx] 
+                    + self.b_m 
+                    + self.P[user_idx, :].dot(self.Q.T))
+        
+        # Clip predictions to the allowed range
+        user_pred = np.clip(user_pred, self.min_rating, self.max_rating)
+        return user_pred
+
+
+    def predict_movie_ratings(self, movie_id: int, movies: pd.DataFrame) -> np.ndarray:
+        """
+        Predict ratings for all users for a given movie_id.
+        """
+        vectorized_movies_id_to_index = movies_id_to_index_vect(movies)
+        movie_idx = int(vectorized_movies_id_to_index(movie_id))
+        
+        # Vectorized prediction for all users:
+        # pred(u, m) = mu + b_u[u] + b_m[m] + P[u,:].dot(Q[m,:].T)
+        # Here we fix m and vary u:
+        movie_pred = (self.mu
+                    + self.b_u
+                    + self.b_m[movie_idx]
+                    + self.P.dot(self.Q[movie_idx, :]))
+        
+        # Clip predictions to the allowed range
+        movie_pred = np.clip(movie_pred, self.min_rating, self.max_rating)
+        return movie_pred
+
+    
     def full_prediction(self) -> np.ndarray:
         pred_matrix = self.mu + self.b_u[:, np.newaxis] + self.b_m[np.newaxis:, ] + self.P.dot(self.Q.T)
         pred_matrix = np.clip(pred_matrix, self.min_rating, self.max_rating)
         return pred_matrix
     
     
-    def recommend(self, id: int, predicted_R: np.ndarray, movies: pd.DataFrame, users: pd.DataFrame, top_n:int =5) -> list:
+    def recommend(self, id: int, movies: pd.DataFrame, users: pd.DataFrame, top_n: int = 25) -> list:
+        if self.uu_mf:
+            # Here, 'id' is the user_id. We recommend movies for this user.
+            user_id = id
+            vectorized_index_to_movies_id = index_to_movies_id_vect(movies)
+            user_pred = self.predict_user_ratings(user_id, users)
+            
+            vectorized_users_id_to_index = users_id_to_index_vect(users)
+            user_idx = int(vectorized_users_id_to_index(user_id))
+            
+            # Exclude movies already rated by this user
+            user_rated_indices = np.where(self.R[user_idx, :] > 0)[0]
+            user_pred[user_rated_indices] = -1e8  # exclude watched items
+            
+            # Get top-N movies
+            top_movies_idx = np.argsort(user_pred)[-top_n:][::-1]
+            
+            recommend_movies = movies[movies['MovieID'].isin(vectorized_index_to_movies_id(top_movies_idx))].copy()
+            recommend_movies['predicted_score'] = rounding_func(user_pred[top_movies_idx])
+            recommend_movies = recommend_movies.sort_values('predicted_score', ascending=False)
+            
+            return list(zip(recommend_movies['MovieID'].tolist(), recommend_movies['predicted_score'].tolist()))
+        else:
+            # Here, 'id' is the movie_id. We recommend users for this movie.
+            movie_id = id
+            vectorized_index_to_users_id = index_to_users_id_vect(users)
+            movie_pred = self.predict_movie_ratings(movie_id, movies)
+            
+            vectorized_movies_id_to_index = movies_id_to_index_vect(movies)
+            movie_idx = int(vectorized_movies_id_to_index(movie_id))
+            
+            # Exclude users who have already rated this movie
+            movie_rated_indices = np.where(self.R[:, movie_idx] > 0)[0]
+            movie_pred[movie_rated_indices] = -1e8  # exclude users who have seen this movie
+            
+            # Get top-N users
+            top_users_idx = np.argsort(movie_pred)[-top_n:][::-1]
+
+            recommend_users = users[users['UserID'].isin(vectorized_index_to_users_id(top_users_idx))].copy()
+            recommend_users['predicted_score'] = rounding_func(movie_pred[top_users_idx])
+            recommend_users = recommend_users.sort_values('predicted_score', ascending=False)
+            
+            return list(zip(recommend_users['UserID'].tolist(), recommend_users['predicted_score'].tolist()))
+        
+        
+    def recommend_using_predicted_ratings(self, id: int, predicted_ratings: np.ndarray, movies: pd.DataFrame, users: pd.DataFrame, top_n:int =25) -> list:
         if self.uu_mf:      # here, id is the user_id, we are recommend movies for user
             user_id = id 
             vectorized_index_to_movies_id = index_to_movies_id_vect(movies)
@@ -233,7 +453,7 @@ class MatrixFactorizationCF:
             
             user_idx = int(vectorized_users_id_to_index(user_id))
             user_rated_indices = np.where(self.R[user_idx, :] > 0)[0]
-            user_pred = predicted_R[user_idx, :].copy()
+            user_pred = predicted_ratings[user_idx, :].copy()
             user_pred[user_rated_indices] = -1e8    # exclude watched items
             
             top_movies_idx = np.argsort(user_pred)[-top_n:][::-1]
@@ -251,7 +471,7 @@ class MatrixFactorizationCF:
 
             movie_idx = int(vectorized_movies_id_to_index(movie_id))
             movie_rated_indices = np.where(self.R[:, movie_idx] > 0)[0]
-            movie_pred = predicted_R[:, movie_idx].copy()
+            movie_pred = predicted_ratings[:, movie_idx].copy()
             movie_pred[movie_rated_indices] = -1e8      # exclude watched items
             
             top_users_idx = np.argsort(movie_pred)[-top_n:][::-1]
@@ -261,7 +481,7 @@ class MatrixFactorizationCF:
             recommend_users = recommend_users.sort_values('predicted_score', ascending=False)
             
             return list(zip(recommend_users['UserID'].tolist(), recommend_users['predicted_score'].tolist()))
-    
+
     
     def print_recommendation(self, predicted_R: np.ndarray, movies: pd.DataFrame, users: pd.DataFrame) -> None:
         print('Recommendation')
@@ -271,7 +491,7 @@ class MatrixFactorizationCF:
             for u in range(self.R.shape[0]):
                 user_id = vectorized_index_to_users_id(u)
                 print(f'***** Recomended Movies for User {user_id}: *****')
-                recommended = self.recommend(user_id, predicted_R=predicted_R, movies=movies, users=users, top_n=5)
+                recommended = self.recommend_using_predicted_ratings(user_id, predicted_R=predicted_R, movies=movies, users=users, top_n=25)
                 for movie_id, rating in recommended: 
                     print(f"Movie {movie_id}, rating: {rating}")
         
@@ -282,14 +502,65 @@ class MatrixFactorizationCF:
             for m in range(self.R.shape[1]):
                 movie_id = vectorized_index_to_movies_id(m)
                 print(f'***** Recomended Users for Movie {movie_id}: *****')
-                recommended = self.recommend(movie_id, predicted_R=predicted_R, movies=movies, users=users, top_n=5)
+                recommended = self.recommend_using_predicted_ratings(movie_id, predicted_R=predicted_R, movies=movies, users=users, top_n=25)
                 for user_id, rating in recommended: 
                     print(f"User {user_id}, rating: {rating}")
                 
                 print('------------------------------------------------------')
                 
-
+                
+    def save_model(self, filename: str) -> None:
+        """
+        Save the model parameters using joblib.
+        """
+        model_data = {
+            "K": self.K,
+            "learning_rate": self.lr,
+            "epochs": self.epochs,
+            "regularization": self.regularization,
+            "uu_mf": self.uu_mf,
+            "min_rating": self.min_rating,
+            "max_rating": self.max_rating,
+            "P": self.P,
+            "Q": self.Q,
+            "b_u": self.b_u,
+            "b_m": self.b_m,
+            "mu": self.mu
+        }
+        joblib.dump(model_data, filename)
+        print(f"Model saved to {filename}.")
+        
     
+    @classmethod
+    def load_model(cls, filename: str, R: np.ndarray):
+        """
+        Load the model parameters using joblib and return a new instance.
+        """
+        model_data = joblib.load(filename)
+        
+        # Reconstruct the model instance
+        model = cls(
+            R=R,
+            K=model_data["K"],
+            learning_rate=model_data["learning_rate"],
+            epochs=model_data["epochs"],
+            regularization=model_data["regularization"],
+            uu_mf=model_data["uu_mf"],
+            min_rating=model_data["min_rating"],
+            max_rating=model_data["max_rating"]
+        )
+        
+        # Load the trained parameters
+        model.P = model_data["P"]
+        model.Q = model_data["Q"]
+        model.b_u = model_data["b_u"]
+        model.b_m = model_data["b_m"]
+        model.mu = model_data["mu"]
+
+        print(f"Model loaded from {filename}.")
+        return model
+                
+
 def build_utility_matrix(df: pd.DataFrame) -> np.ndarray:
     utility_matrix = csr_matrix(df.pivot(index='UserID', columns='MovieID', values='Rating').fillna(0).values)
     return utility_matrix.toarray()
@@ -306,7 +577,6 @@ def find_nonzero_mean_ratings(utility_matrix: np.ndarray) -> np.ndarray:
     mean_ratings[np.isnan(mean_ratings)] = 0
     
     return mean_ratings
-
     
 
 def normalize(utility_matrix: np.ndarray) -> np.ndarray:
@@ -351,32 +621,13 @@ def train_validation_split(R: np.ndarray, validation_ratio: float = 0.2, seed: i
     return train_R, validation_R
 
 
-def hyperparameter_tuning(
-    R: np.ndarray,
-    user_ids: list[int],
-    movie_ids: list[int],
-    hyperparameter_combinations: list[tuple[int, float, float, int]],
-    validation_ratio: float = 0.2,
-    top_n: int = 5
+def mf_hyperparameter_tuning(
+    train_R: np.ndarray,
+    hyperparameter_combinations: list,
+    val_R: np.ndarray
 ) -> pd.DataFrame:
-    """
-    Perform hyperparameter tuning for the MatrixFactorizationCF model.
     
-    Parameters:
-    - R (np.ndarray): Original user-item rating matrix.
-    - user_ids (List[int]): List of unique UserIDs.
-    - movie_ids (List[int]): List of unique MovieIDs.
-    - hyperparameter_combinations (List[Tuple[int, float, float, int]]): List of hyperparameter tuples.
-    - validation_ratio (float): Proportion of ratings to include in the validation set.
-    - top_n (int): Number of top recommendations to consider during evaluation.
-    
-    Returns:
-    - results_df (pd.DataFrame): DataFrame containing hyperparameters and corresponding validation RMSE.
-    """
     results = []
-    
-    # Split the data once to ensure consistency across hyperparameter evaluations
-    train_R, validation_R = train_validation_split(R, validation_ratio=validation_ratio)
     
     for idx, (K, lr, reg, epochs) in enumerate(hyperparameter_combinations):
         print(f"Evaluating combination {idx + 1}/{len(hyperparameter_combinations)}: K={K}, lr={lr}, reg={reg}, epochs={epochs}")
@@ -392,10 +643,41 @@ def hyperparameter_tuning(
             min_rating=1.0,
             max_rating=10.0
         )
-        mf.train()
+        best_val_rmse = mf.train(val_R)
+        
+        # Record the results
+        results.append({
+            'K': K,
+            'learning_rate': lr,
+            'regularization': reg,
+            'epochs': epochs,
+            'validation_RMSE': best_val_rmse
+        })
+    
+    # Convert results to DataFrame
+    results_df = pd.DataFrame(results)
+    return results_df
+
+
+def neighborhood_hyperparameter_tuning(
+    R: np.ndarray,
+    hyperparameter_combinations: list,
+    validation_ratio: float = 0.2
+) -> pd.DataFrame:
+    
+    results = []
+    
+    # Split the data once to ensure consistency across hyperparameter evaluations
+    train_R, validation_R = train_validation_split(R, validation_ratio=validation_ratio)
+    
+    for idx, (k, uu_cf, cosine) in enumerate(hyperparameter_combinations): 
+        print(f"Evaluating combination {idx + 1}/{len(hyperparameter_combinations)}: k_neighbors={k}, uu_cf={uu_cf}, cosine={cosine}")
+        
+        # Initialize the model with current hyperparameters 
+        neighborhood_cf = NeighborhoodCF(utility_matrix=train_R, k_neighbors=k, uu_cf=uu_cf, cosine=cosine)
         
         # Generate predictions
-        predicted_R = mf.full_prediction()
+        predicted_R = neighborhood_cf.predict_ratings()[0]
         
         # Evaluate on validation set
         # Only consider non-zero entries in validation_R
@@ -413,18 +695,80 @@ def hyperparameter_tuning(
             rmse = root_mean_squared_error(val_true, val_pred) 
         else:
             rmse = float('inf')  # Handle edge case of no valid comparisons
-        
-        # Record the results
+
+        # Log results
         results.append({
-            'K': K,
-            'learning_rate': lr,
-            'regularization': reg,
-            'epochs': epochs,
-            'validation_RMSE': rmse
+            'k_neighbors': k,
+            'uu_cf': uu_cf,
+            'cosine': cosine,
+            'rmse': rmse
         })
-    
+        
     # Convert results to DataFrame
     results_df = pd.DataFrame(results)
     return results_df
 
 
+def calculate_precision_recall(user_ratings, k, threshold):
+    user_ratings.sort(key=lambda x: x[0], reverse=True)
+
+    n_rel = sum(true_r >= threshold for _, true_r in user_ratings)
+    n_rec_k = sum(est >= threshold for est, _ in user_ratings[:k])
+    n_rel_and_rec_k = sum(
+        (true_r >= threshold) and (est >= threshold) for est, true_r in user_ratings[:k]
+    )
+
+    precision = n_rel_and_rec_k / n_rec_k if n_rec_k != 0 else 1
+    recall = n_rel_and_rec_k / n_rel if n_rel != 0 else 1
+
+    return precision, recall
+
+def eval(
+    predicted_ratings: pd.DataFrame, 
+    test_data: pd.DataFrame,
+    users: pd.DataFrame,
+    movies: pd.DataFrame
+) -> dict: 
+    
+    # Map user and movie IDs to indices 
+    vectorized_users_id_to_index = users_id_to_index_vect(users)
+    vectorized_movies_id_to_index = movies_id_to_index_vect(movies)
+    
+    # Extract true rating and predicted rating 
+    true_ratings = []
+    pred_ratings = []
+    
+    mydict = defaultdict(list)
+    
+    for _, row in test_data.iterrows():
+        user_id = row['UserID']
+        movie_id = row['MovieID']
+        true_rating = row['Rating']
+        
+        user_idx = int(vectorized_users_id_to_index(user_id))
+        movie_idx = int(vectorized_movies_id_to_index(movie_id))
+        
+        pred_rating = predicted_ratings[user_idx, movie_idx]
+        
+        true_ratings.append(true_rating)
+        pred_ratings.append(pred_rating)
+        mydict[user_id].append((pred_rating, true_rating))
+        
+    user_ratings = list(zip(pred_ratings, true_ratings))
+        
+    rmse = root_mean_squared_error(true_ratings, pred_ratings)
+    
+    avg_precision = 0.0
+    avg_recall = 0.0
+
+    for user, user_ratings in mydict.items():
+        precision, recall = calculate_precision_recall(user_ratings, k=25, threshold=6)
+        avg_precision += precision
+        avg_recall += recall
+        
+    avg_precision /= len(mydict)
+    avg_recall /= len(mydict)
+    f1_score = (2 * avg_precision * avg_recall) / (avg_precision + avg_recall)
+    
+    
+    return {'RMSE': float(rmse), 'Precision': float(avg_precision), 'Recall': float(avg_recall), 'F1-Score': float(f1_score)}
