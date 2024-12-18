@@ -63,7 +63,7 @@ def main():
     filtered_movies = []
 
     if search_query:
-        filtered_movies = Movie.query.filter(Movie.name.ilike(f" %{search_query}% ")).all()
+        filtered_movies = Movie.query.filter(Movie.name.ilike(f"%{search_query}%")).limit(5).all()
 
     # highest_rated_movies = db_movie.sort_values(by='ratingValue', ascending=False).to_dict('records')
     # you_may_like_movies = [] if is_guest else db_movie.sample(10).sort_values(by='ratingValue', ascending = False).to_dict('records')
@@ -176,7 +176,6 @@ def rated_movies():
         .all()
     )
     return render_template('rated_movies.html', rated_movies=rated_movies)
-
 
 @app.route('/logout')
 def logout():
