@@ -1,5 +1,7 @@
 # film-finder
 
+NOTICE: This repo is missing `resources` folder due to the size limit. If you want to run, you must download it from <https://husteduvn-my.sharepoint.com/:f:/g/personal/thanh_vt220066_sis_hust_edu_vn/EuFvwUY4QLFHrt3oM-ynRHwBS0G4rbZPSNG-M8_VbSnREA?e=mIVNsV>.
+
 ## Steps to Run the App
 
 ### 1. **Initialize the Database**
