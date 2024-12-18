@@ -32,7 +32,7 @@ def load_ratings():
     ratings['rating'] = ratings['rating'].astype(int)
     return ratings
 
-conn = sqlite3.connect("movies_ratings.db")
+conn = sqlite3.connect("app/movies_ratings.db")
 cursor = conn.cursor()
 
 cursor.execute("DROP TABLE IF EXISTS movies")
