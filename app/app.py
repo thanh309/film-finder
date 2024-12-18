@@ -1,14 +1,20 @@
+import sys
+import os
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 from flask import Flask, request, session, redirect, url_for, render_template
 from sqlalchemy.exc import SQLAlchemyError
 from model.model import db, Movie, Rating
 # from content_based.knn_model import predict_film_unwatch
 from ncf.ncf import recommend_top_movies
 
+base_dir = os.path.abspath(os.path.dirname(__file__))
 
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'filmfinder'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///D:/others/film-finder/app/movies_ratings.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(base_dir, "movies_ratings.db")}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
