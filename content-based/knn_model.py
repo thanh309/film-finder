@@ -203,10 +203,10 @@ def eval(ratings_data, test_ratings_data, k=25, threshold=6):
 
 
 
-user_ids = ratings_data['user_id'].unique()  # Get unique user IDs
-sampled_user_ids = np.random.choice(user_ids, size=int(len(user_ids) * 0.01), replace=False)  # 1% of users
-ratings_data_sampled = ratings_data[ratings_data['user_id'].isin(sampled_user_ids)]
-test_ratings_data_sampled = test_ratings_data[test_ratings_data['user_id'].isin(sampled_user_ids)]
+# user_ids = ratings_data['user_id'].unique()  # Get unique user IDs
+# sampled_user_ids = np.random.choice(user_ids, size=int(len(user_ids) * 0.01), replace=False)  # 1% of users
+# ratings_data_sampled = ratings_data[ratings_data['user_id'].isin(sampled_user_ids)]
+# test_ratings_data_sampled = test_ratings_data[test_ratings_data['user_id'].isin(sampled_user_ids)]
 
 # print(len(ratings_data_sampled), len(test_ratings_data_sampled))
 
