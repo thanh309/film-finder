@@ -174,8 +174,11 @@ def calculate_precision_recall_for_recommendations(user_id, recommendations, tes
     return precision, recall
 
 
+<<<<<<< HEAD
 
 
+=======
+>>>>>>> 12192a27e43af25ed0da18e6f12b2eeaaaf7cac8
 from tqdm import tqdm
 
 def eval(ratings_data, test_ratings_data, k=25, threshold=6):
