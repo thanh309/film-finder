@@ -15,7 +15,8 @@
             <button type="submit">Search</button>
         </form>
         <div class="user-info">
-            <span>Welcome, {{ user_name }}</span>
+            
+            <span>Welcome, <a href="{{ url_for('rated_movies') }}">{{ user_name }}</a></span>
             <a href="{{ url_for('logout') }}">Logout</a>
         </div>
     </header>
@@ -50,9 +51,7 @@
                                 <a href="{{ url_for('content', content_id=movie['fid']) }}">
                                     <div class="movie-card">
                                         <img src="{{ movie.image }}" alt="{{ movie.name }}" class="main-movie-image">
-                                        <div class = "container">
-                                            <h3>{{movie.name}}</h3>
-                                        </div>
+                                        <h3>{{movie.name}}</h3>
                                     </div>
                                 </a>
                             </div>
@@ -94,37 +93,77 @@
     <script>
         document.addEventListener("DOMContentLoaded", function() {
             const isGuest = "{{ is_guest }}".toLowerCase() === 'true';
-            if (!isGuest){
+            if (!isGuest) {
                 const prevButtonYouMayLike = document.querySelector('.prev-you-may-like');
                 const nextButtonYouMayLike = document.querySelector('.next-you-may-like');
-                let offsetYouMayLike = "{{ display_index_you_may_like }}";
-                
+                let offsetYouMayLike = parseInt("{{ display_index_you_may_like }}", 10);
+    
+                const updateYouMayLike = (offset) => {
+                    fetch(`/update_you_may_like?offset=${offset}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            const filmList = document.querySelector('.you-may-like .film-list');
+                            filmList.innerHTML = '';
+                            data.movies.forEach(movie => {
+                                filmList.innerHTML += `
+                                    <div class="movie-card">
+                                        <a href="/content/${movie.fid}">
+                                            <div class = "movie-card">
+                                                <img src="${movie.image}" alt="${movie.name}" class="main-movie-image">
+                                                <h3>${movie.name}</h3>
+                                            </div>    
+                                        </a>
+                                    </div>`;
+                            });
+                            offsetYouMayLike = offset;
+                        });
+                };
+    
                 prevButtonYouMayLike.addEventListener('click', function() {
                     if (offsetYouMayLike > 0) {
-                        offsetYouMayLike--;
-                        window.location.search = '?display_index_you_may_like=' + offsetYouMayLike + '&display_index_highest_rated={{ display_index_highest_rated }}';
+                        updateYouMayLike(offsetYouMayLike - 5);
                     }
                 });
-
+    
                 nextButtonYouMayLike.addEventListener('click', function() {
-                    offsetYouMayLike++;
-                    window.location.search = '?display_index_you_may_like=' + offsetYouMayLike + '&display_index_highest_rated={{ display_index_highest_rated }}';
+                    updateYouMayLike(offsetYouMayLike + 5);
                 });
             }
+    
+            // Highest Rated Pagination
             const prevButtonHighestRated = document.querySelector('.prev-highest-rated');
             const nextButtonHighestRated = document.querySelector('.next-highest-rated');
-            let offsetHighestRated = "{{ display_index_highest_rated }}";
-            
+            let offsetHighestRated = parseInt("{{ display_index_highest_rated }}", 10);
+    
+            const updateHighestRated = (offset) => {
+                fetch(`/update_highest_rated?offset=${offset}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const filmList = document.querySelector('.highest-rated .film-list');
+                        filmList.innerHTML = ''; // Clear the existing movies
+                        data.movies.forEach(movie => {
+                            filmList.innerHTML += `
+                                <div class="movie-card">
+                                    <a href="/content/${movie.fid}">
+                                        <div class = "movie-card">
+                                            <img src="${movie.image}" alt="${movie.name}" class="main-movie-image">
+                                            <h3>${movie.name}</h3>
+                                        </div>    
+                                    </a>
+                                </div>`;
+                        });
+                        offsetHighestRated = offset;
+                    });
+            };
+    
             prevButtonHighestRated.addEventListener('click', function() {
                 if (offsetHighestRated > 0) {
-                    offsetHighestRated--;
-                    window.location.search = '?display_index_you_may_like={{ display_index_you_may_like }}&display_index_highest_rated=' + offsetHighestRated;
+                    updateHighestRated(offsetHighestRated - 5);
                 }
             });
-
+    
             nextButtonHighestRated.addEventListener('click', function() {
-                offsetHighestRated++;
-                window.location.search = '?display_index_you_may_like={{ display_index_you_may_like }}&display_index_highest_rated=' + offsetHighestRated;
+                updateHighestRated(offsetHighestRated + 5);
             });
         });
     </script>

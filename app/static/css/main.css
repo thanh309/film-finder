@@ -96,7 +96,6 @@ section h2 {
     display: flex;
     flex-wrap: wrap;
     justify-content: space-between;
-    gap: 5px;
 }
 
 .movie-card {
@@ -119,7 +118,7 @@ section h2 {
 }
 
 .movie-card:hover {
-    transform: scale(1.15);  
+    transform: scale(1.1);  
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.2); 
     z-index: 1;  
 }
@@ -169,47 +168,57 @@ section h2 {
 .movie-card h3 {
     padding: 20px;
     margin: 5px;
-    font-size: 0.9rem;
+    font-size: 1rem;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
-.prev-button,
-.next-button {
-    background-color: #007bff;
+.prev-you-may-like,
+.next-you-may-like {
+    background-color: #c2defa;
     color: white;
     border: none;
-    /* padding: 10px; */
-    /* ************************************** */
-    padding: 30px;
-    font-size: 16px;
+    font-size: 44px; 
     cursor: pointer;
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    z-index: 1;
-    border-radius: 50%;
-    /* ************************************** */
-    width: 20px;
-    height: 50px;
+    border-radius: 95%; 
+    width: 60px; 
+    height: 60px; 
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
-.prev-button {
-    left: 0;
+
+
+/* Hover Effects for Buttons */
+.prev-you-may-like:hover,
+.next-you-may-like:hover {
+    background-color: #717e8d; 
+    transform: scale(1.1); 
 }
 
-.next-button {
-    right: 0;
-}
-
-.prev-button:hover,
-.next-button:hover {
-    background-color: #0056b3;
-}
 
 .additional-links a:visited{
     color: blue
+}
+
+.prev-highest-rated,
+.next-highest-rated {
+    background-color: #c2defa;
+    color: white;
+    border: none;
+    font-size: 44px; 
+    cursor: pointer;
+    border-radius: 95%; 
+    width: 60px; 
+    height: 60px; 
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+
+.prev-highest-rated:hover,
+.next-highest-rated:hover {
+    background-color: #717e8d;
+    transform: scale(1.1); 
 }
 
 
